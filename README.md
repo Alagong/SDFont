@@ -110,6 +110,8 @@ From left to right:
 
 * macOS (tested on Mac mini M1 2020 & Ventura 13.5.2)
 
+* Windows (preliminary at moment. See the instruction provided by NRTnarathip in [Issue #5]( https://github.com/ShoYamanishi/SDFont/issues/5 ). Further clarification and/or verification by others who have access to Windows are appreciated. ).
+
 # Reuirements
 
 ## General
