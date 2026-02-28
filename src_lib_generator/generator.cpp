@@ -72,11 +72,6 @@ bool Generator::generate()
         return false;
     }
 
-    if ( mConf.extraGlyphPath() != "" ) {
-
-       generateExtraGlyphs();
-    }
-
     getKernings();
 
     const auto bestWidthForDefaultFontSize = fitGlyphsToTexture();
@@ -576,43 +571,6 @@ std::pair<float, float> Generator::findMeanGlyphDimension()
     return std::pair( width / count, height / count );
 }
 
-void Generator::generateExtraGlyphs()
-{
-    const auto dim  = findMeanGlyphDimension();
-
-    addExtraGlyph( 0x0A, "extra line feed", dim, GeneratorConfig::FileNameExtraGlyphLineFeed );
-
-    addExtraGlyph( 0x00, "extra blank", dim, GeneratorConfig::FileNameExtraGlyphBlank          );
-}
-
-void Generator::addExtraGlyph( const long code_point, const string& glyph_name, const std::pair<float, float>& dim, const std::string& file_name )
-{
-    const auto base_path = std::filesystem::path{ mConf.extraGlyphPath() };
-    const auto file_path = std::filesystem::path{ file_name };
-
-    unsigned long width, height;
-    unsigned char* data;
-
-    const auto result = loadPngImage( base_path / file_path, width, height, &data );
-
-    if ( mVerbose ) {
-        cerr << "External bitmap: [" << file_name << "] ( " << width << ", " << height << ")\n";
-    }
-
-    auto* g = new InternalGlyphForGen (
-        mConf,
-        mThreadDriver,
-        code_point,
-        glyph_name,
-        static_cast< long >( dim.first  ),
-        static_cast< long >( dim.second ),
-        data,
-        width,
-        height
-    );
-
-    mGlyphs.push_back( g );
-}
 
 bool Generator::generateGlyphBitmaps( long bestWidthForDefaultFontSize )
 {

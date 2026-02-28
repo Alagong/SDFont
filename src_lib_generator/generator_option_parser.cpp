@@ -13,7 +13,6 @@ const string GeneratorOptionParser::Usage = "Usage: "
                                             "sdfont_generator "
                                             "-verbose "
                                             "-font_path [FontPath] "
-                                            "-extra_glyph_path [DirPath] "
                                             "-texture_size [num] "
                                             "-glyph_size_for_sampling [num] "
                                             "-ratio_spread_to_glyph [float] "
@@ -26,7 +25,6 @@ const string GeneratorOptionParser::Usage = "Usage: "
                                             "\n";
 
 const string GeneratorOptionParser::FontPath             = "-font_path" ;
-const string GeneratorOptionParser::ExtraGlyphPath       = "-extra_glyph_path" ;
 const string GeneratorOptionParser::TextureSize          = "-texture_size" ;
 const string GeneratorOptionParser::GlyphSizeForSampling = "-glyph_size_for_sampling" ;
 const string GeneratorOptionParser::RatioSpreadToGlyph   = "-ratio_spread_to_glyph" ;
@@ -71,18 +69,6 @@ bool GeneratorOptionParser::parse( int argc, char* argv[] )
 
                 string arg2( argv[++i] );
                 processFontPath( arg2 );
-            }
-            else {
-                mError = true;
-                break;
-            }
-        }
-        else if ( arg.compare ( ExtraGlyphPath ) == 0 ) {
-
-            if ( i < argc - 1 ) {
-
-                string arg2( argv[++i] );
-                processExtraGlyphPath( arg2 );
             }
             else {
                 mError = true;
@@ -195,17 +181,6 @@ void GeneratorOptionParser::processFontPath ( const string& s ) {
     }
 }
 
-void GeneratorOptionParser::processExtraGlyphPath ( const string& s ) {
-
-    if ( doesDirectoryExist( s ) ) {
-
-         mConfig.setExtraGlyphPath( s );
-    }
-    else {
-
-        mError = true;
-    }
-}
 
 void GeneratorOptionParser::processTextureSize( const string& s ) {
 

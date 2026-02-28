@@ -17,12 +17,8 @@ class GeneratorConfig {
 
   public:
 
-    static const string FileNameExtraGlyphLineFeed;
-    static const string FileNameExtraGlyphBlank;
-
     GeneratorConfig():
         mFontPath                   { DefaultFontPath },
-        mExtraGlyphPath             { DefaultExtraGlyphPath },
         mOutputFileName             { DefaultOutputFileName },
         mOutputTextureSize          { DefaultOutputTextureSize },
         mGlyphScalingFromSamplingToPackedSignedDist
@@ -40,7 +36,6 @@ class GeneratorConfig {
     virtual ~GeneratorConfig(){;}
 
     void setFontPath           ( string s ) { mFontPath       = s ; }
-    void setExtraGlyphPath     ( string s ) { mExtraGlyphPath = s ; }
     void setOutputFileName     ( string s ) { mOutputFileName = s ; }
     void setOutputTextureSize  ( long   v ) { mOutputTextureSize    = v ; }
     void setGlyphBitmapSizeForSampling
@@ -59,7 +54,6 @@ class GeneratorConfig {
                                ( bool b )   { mReverseYDirectionForGlyphs = b; }
 
     string fontPath()          const { return mFontPath ;                         }
-    string extraGlyphPath()    const { return mExtraGlyphPath ;                   }
     string outputFileName()    const { return mOutputFileName ;                   }
     long   outputTextureSize() const { return mOutputTextureSize ;                }
     long   defaultRatioSpreadToGlyph()
@@ -106,7 +100,6 @@ class GeneratorConfig {
   private:
 
     string mFontPath ;
-    string mExtraGlyphPath ;
     string mOutputFileName ;
     long   mOutputTextureSize ;
     long   mGlyphBitmapSizeForSampling;

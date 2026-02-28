@@ -26,8 +26,7 @@ class GeneratorOptionParser {
     inline void reset() { mHelp = false; mError = false; mVerbose = false; }
 
     void processFontPath             ( const string& s ) ;
-    void processExtraGlyphPath       ( const string& s ) ;
-    void processTextureSize          ( const string& s ) ;
+        void processTextureSize          ( const string& s ) ;
     void processGlyphSizeForSampling ( const string& s ) ;
     void processRatioSpreadToGlyph   ( const string& s ) ;
     void processCharCodeRange        ( const string& s ) ;
@@ -49,8 +48,7 @@ class GeneratorOptionParser {
     bool                  mVerbose;
 
     static const string   FontPath;
-    static const string   ExtraGlyphPath;
-    static const string   TextureSize;
+        static const string   TextureSize;
     static const string   GlyphSizeForSampling;
     static const string   RatioSpreadToGlyph;
     static const string   ProcessHiddenGlyphs;
