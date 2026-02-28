@@ -125,6 +125,7 @@ From left to right:
 
 * [utfcpp](https://github.com/nemtrif/utfcpp) : a library to manipulate strings in unicode developed by [Nemanja Trifunovic](https://github.com/nemtrif) provided under BSL-1.0 license. It is already included in [include/utfcpp](include/utfcpp/).
 
+* [nlohmann/json](https://github.com/nlohmann/json) : a library to parse, emit, and manipulate JSON data structures. Provided under the MIT license. 
 
 Following is a sample installation process tested on Ubuntu 22.04.3 LTS.
 ```
