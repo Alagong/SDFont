@@ -73,7 +73,7 @@ endif()
 
 # DEMO
 
-add_executable( sdfont_demo 
+add_executable( sdfont_demo
     ${PROJECT_SOURCE_DIR}/src_demo/demo.cpp
 )
 
@@ -84,9 +84,9 @@ target_link_libraries( sdfont_demo sdfont_rt )
 target_link_libraries( sdfont_demo GLEW::glew )
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES Darwin )
-   
+
     target_link_directories( sdfont_demo PRIVATE "/usr/local/lib" ) # for GLFW3
-    target_include_directories( sdfont_demo PRIVATE ${OPENGL_INCLUDE_DIR}/Headers )
+    target_include_directories( sdfont_demo PRIVATE ${OPENGL_INCLUDE_DIR}/Headers ${PROJECT_SOURCE_DIR}/ext_dep )
     target_compile_definitions( sdfont_demo PRIVATE __MAC_LIB__ )
 
     target_link_libraries( sdfont_demo glfw3 )

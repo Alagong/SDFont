@@ -215,7 +215,7 @@ GlfwManager::GlfwManager(
     }
 
     glfwMakeContextCurrent( mWindow );
-    
+
     glfwGetFramebufferSize(
 
         mWindow,
@@ -252,16 +252,16 @@ void GlfwManager::configGLFW()
     glfwSetWindowSizeCallback
                          ( mWindow, (GLFWwindowsizefun)  dispatchWindowSize );
 
-    glfwSetMouseButtonCallback 
+    glfwSetMouseButtonCallback
                          ( mWindow, (GLFWmousebuttonfun) dispatchMouseButton );
 
-    glfwSetCursorPosCallback   
+    glfwSetCursorPosCallback
                          ( mWindow, (GLFWcursorposfun)   dispatchMousePos );
-                                        
+
     glfwSetScrollCallback( mWindow, (GLFWscrollfun)      dispatchMouseWheel );
-                                        
+
     glfwSetKeyCallback   ( mWindow, (GLFWkeyfun)         dispatchKey );
-                                        
+
     glfwSetCharCallback  ( mWindow, (GLFWcharfun)        dispatchChar );
 
     glfwSetInputMode     ( mWindow, GLFW_STICKY_KEYS, GL_TRUE );
@@ -272,7 +272,7 @@ void GlfwManager::configGLFW()
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    glDepthFunc(GL_LESS); 
+    glDepthFunc(GL_LESS);
 
 }
 
@@ -308,7 +308,7 @@ void GlfwManager::dispatchWindowSize( GLFWwindow* w, int x, int y )
             &(mThisSingleton->mWindowWidthInPixel),
             &(mThisSingleton->mWindowHeightInPixel)
         );
-    
+
         glfwGetWindowSize(
             mThisSingleton->mWindow,
             &(mThisSingleton->mWindowWidth),
@@ -318,7 +318,7 @@ void GlfwManager::dispatchWindowSize( GLFWwindow* w, int x, int y )
         glViewport(
             0,
             0,
-            (GLsizei)(mThisSingleton->mWindowWidthInPixel), 
+            (GLsizei)(mThisSingleton->mWindowWidthInPixel),
             (GLsizei)(mThisSingleton->mWindowHeightInPixel)
         );
 
@@ -373,7 +373,7 @@ void GlfwManager::dispatchChar( GLFWwindow* w, int c )
 
 
 void GlfwManager::callbackWindowSize(
-    GLFWwindow* window, 
+    GLFWwindow* window,
     int         width,
     int         height
 ) {
@@ -437,7 +437,7 @@ class DeltaTime {
 
         gettimeofday( &mTimeVal, NULL );
 
-        mMicroSecondsCur = mTimeVal.tv_sec*1000000.0 + 
+        mMicroSecondsCur = mTimeVal.tv_sec*1000000.0 +
                            mTimeVal.tv_usec ;
     }
 
@@ -455,7 +455,7 @@ class DeltaTime {
         mMicroSecondsCur  = mTimeVal.tv_sec * 1000000.0 + mTimeVal.tv_usec ;
 
         double delta = ( mMicroSecondsCur - microSecondsPrev ) / 1000000.0 ;
-        
+
         return delta;
     }
 
@@ -471,9 +471,9 @@ class Word {
 
   public:
     Word(
-        SDFont::RuntimeHelper& helper, 
-        const string           str, 
-        const float            fontSize, 
+        SDFont::RuntimeHelper& helper,
+        const string           str,
+        const float            fontSize,
         const float            spreadRatio,
         const float            letterSpacing
     ):
@@ -594,7 +594,7 @@ class Line {
 
     vector<Word>& words() { return mWords; }
 
-    long len() const { 
+    long len() const {
         long sum = 0;
         for ( auto& w : mWords ) {
             sum += w.len();
@@ -661,7 +661,7 @@ class Line {
     }
 
     void generateElements(float* elements, GLuint* indices, long startIndex) {
-        
+
         for ( auto& w : mWords ) {
 
             w.generateElements ( elements, indices, startIndex );
@@ -671,7 +671,7 @@ class Line {
 
   private:
 
-    SDFont::RuntimeHelper& mHelper;    
+    SDFont::RuntimeHelper& mHelper;
     float                  mLeftX;
     float                  mBaselineY;
     float                  mWidth;
@@ -700,7 +700,7 @@ class Paragraph {
 
     vector<Line>& lines() { return mLines; }
 
-    long len() const { 
+    long len() const {
         long sum = 0;
         for ( auto& line : mLines ) {
             sum += line.len();
@@ -720,7 +720,7 @@ class Paragraph {
     }
 
 
-    void setWidth( float w ) { 
+    void setWidth( float w ) {
 
         mWidth = w;
         for ( auto& line : mLines ) {
@@ -737,7 +737,7 @@ class Paragraph {
     }
 
 
-    float totalHeight() {   
+    float totalHeight() {
 
         float sum = 0.0;
 
@@ -773,7 +773,7 @@ class Paragraph {
             auto& prevLine = mLines[ i - 1 ];
 
             curBaselineY += ( prevLine.advanceY() * scale );
-            
+
         }
 
         mLines[0].setPos( mLeftX, curBaselineY ) ;
@@ -781,7 +781,7 @@ class Paragraph {
     }
 
     void generateElements(float* elements, GLuint* indices, long startIndex) {
-        
+
         for ( auto& line : mLines ) {
 
             line.generateElements ( elements, indices, startIndex );
@@ -791,7 +791,7 @@ class Paragraph {
 
   private:
 
-    SDFont::RuntimeHelper& mHelper;    
+    SDFont::RuntimeHelper& mHelper;
     float                  mLeftX;
     float                  mBottomBaselineY;
     float                  mWidth;
@@ -808,10 +808,10 @@ class SequenceElement {
   public:
     SequenceElement(
         SDFont::RuntimeHelper&        helper,
-        SDFont::VanillaShaderManager& shader 
+        SDFont::VanillaShaderManager& shader
     ) :
         mCurTime   ( 0.0     ),
-        mHelper    ( helper  ),    
+        mHelper    ( helper  ),
         mShader    ( shader  ),
         mGLattr    ( nullptr ),
         mGLindices ( nullptr ) {;}
@@ -833,7 +833,7 @@ class SequenceElement {
   protected:
 
 
-    void allocAttrIndices() {        
+    void allocAttrIndices() {
 
         mGLattr    = (float*)malloc (
 
@@ -1098,7 +1098,7 @@ class SeqMainRoll :public SequenceElement {
         line2.setWidth( line2.totalWidth() * 1.1 );
 
         allocAttrIndices();
-        
+
         line1.setPos( -0.5 * line1.width(), +0.5 * line1.advanceY());
         line1.assignPosForWords();
         line1.generateElements( mGLattr, mGLindices, 0 );
@@ -1123,13 +1123,13 @@ class SeqMainRoll :public SequenceElement {
         para2.assignPosForWords();
         para3.assignPosForWords();
 
-        para1.generateElements( mGLattr, mGLindices, 
+        para1.generateElements( mGLattr, mGLindices,
             line1.len() + line2.len() );
 
-        para2.generateElements( mGLattr, mGLindices, 
+        para2.generateElements( mGLattr, mGLindices,
             line1.len() + line2.len() + para1.len() );
 
-        para3.generateElements( mGLattr, mGLindices, 
+        para3.generateElements( mGLattr, mGLindices,
             line1.len() + line2.len() + para1.len() + para2.len() );
 
         mEffect         = 1;
@@ -1156,7 +1156,7 @@ class SeqMainRoll :public SequenceElement {
                           glm::vec3(  0.0f,  0.0f,  1.0f ), // Cam pos
                           glm::vec3(  0.0f,  0.0f,  0.0f ), // and looks here
                           glm::vec3(  0.0f,  1.0f,  0.0f )  // Head is up
-                      );          
+                      );
 
         mP = glm::perspective(glm::radians(45.0f), 4.0f / 4.0f, 0.1f, 100.0f);
 
@@ -1170,8 +1170,8 @@ class SeqMainRoll :public SequenceElement {
 
         if  ( 9.0 <= t && t < 30.0 ) {
 
-            mM = glm::translate( mMrot, glm::vec3( 0.0, 
-                                                   0.3 * (t - 9.0) + 0.5, 
+            mM = glm::translate( mMrot, glm::vec3( 0.0,
+                                                   0.3 * (t - 9.0) + 0.5,
                                                    -1.3                    ));
             mBaseColor      = glm::vec3( 1.0, 1.0, 0.0 );
             draw();
@@ -1179,10 +1179,10 @@ class SeqMainRoll :public SequenceElement {
         }
         else if ( 30.0 <= t && t < 40.0) {
 
-            mM = glm::translate( mMrot, glm::vec3( 0.0, 
+            mM = glm::translate( mMrot, glm::vec3( 0.0,
                                                    0.3 * (t - 9.0) + 0.5,
                                                    -1.3                    ));
-            mBaseColor      = glm::vec3( 0.1 * (40.0 - t), 
+            mBaseColor      = glm::vec3( 0.1 * (40.0 - t),
                                          0.1 * (40.0 - t),
                                          0.0              );
             draw();
@@ -1234,7 +1234,7 @@ class WM : public GlfwManager  {
         GlfwManager ( width, height),
         mSeqStarted ( false )
         {;}
-  
+
     void callbackKey(
         GLFWwindow* window,
         int         key,
