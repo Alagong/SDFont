@@ -1,5 +1,7 @@
 cmake_minimum_required( VERSION 3.10 )
 
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
 project( sdfont )
 
 include(CMakePrintHelpers)
@@ -29,6 +31,7 @@ target_include_directories( sdfont_gen PUBLIC ${PROJECT_SOURCE_DIR}/include )
 
 target_include_directories( sdfont_gen PRIVATE ${FREETYPE_INCLUDE_DIRS} )
 target_include_directories( sdfont_gen PRIVATE ${PNG_INCLUDE_DIR}       )
+target_include_directories( sdfont_gen PRIVATE ${PROJECT_SOURCE_DIR}/ext_dep )
 
 target_link_directories( sdfont_gen PRIVATE "/usr/local/lib" )
 
@@ -40,6 +43,7 @@ target_link_libraries( sdfont_gen ${PNG_LIBRARIES}      )
 add_executable( sdfont_commandline ${PROJECT_SOURCE_DIR}/src_commandline/generator.cpp )
 target_include_directories( sdfont_commandline PRIVATE ${FREETYPE_INCLUDE_DIRS} )
 target_include_directories( sdfont_commandline PRIVATE ${PROJECT_SOURCE_DIR}/include )
+target_include_directories( sdfont_commandline PRIVATE ${PROJECT_SOURCE_DIR}/ext_dep )
 target_compile_features( sdfont_commandline PRIVATE cxx_std_17 )
 target_link_libraries( sdfont_commandline sdfont_gen )
 
@@ -56,6 +60,7 @@ add_library( sdfont_rt
 target_compile_features( sdfont_rt PRIVATE cxx_std_17 )
 target_include_directories( sdfont_rt PUBLIC ${PROJECT_SOURCE_DIR}/include )
 target_include_directories( sdfont_rt PRIVATE ${PNG_INCLUDE_DIR}       )
+target_include_directories( sdfont_rt PRIVATE ${PROJECT_SOURCE_DIR}/ext_dep )
 target_link_libraries( sdfont_rt ${PNG_LIBRARIES}      )
 target_link_libraries( sdfont_rt GLEW::glew )
 

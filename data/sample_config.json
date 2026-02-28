@@ -1,0 +1,22 @@
+{
+    "input fonts" : [
+        {
+            "font name" : "ariel-0x0000-0x0100",
+            "font path" : "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "ranges"    : [
+                "0X0000", "0X0100"
+            ]
+        }
+    ],
+
+    "output" : {
+        "output file name wo ext" : "signed_dist_font",
+        "texture size"            : 512
+    },
+
+    "glyph bitmap size for sampling"                    : 1024,
+    "ratio spread to glyph"                             : 0.2,
+    "process hidden glyphs"                             : false,
+    "enable dead reckoning"                             : false,
+    "reverse Y-direction for glyphs"                    : false
+}

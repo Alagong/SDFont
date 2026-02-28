@@ -212,25 +212,63 @@ It takes a vector TrueType font (usually the extension is `.ttf` or `.ttc`, and 
 
 
 ```
-Usage: sdfont_commandline -verbose -font_path [FontPath] -process_hidden_glyphs -char_code_range 0X********-0X******** (can be specified multiple times) -texture_size [num] -glyph_size_for_sampling [num] -ratio_spread_to_glyph [float] -num_threads [num 1-32] [output file name w/o ext]
+Usage: sdfont_generator -verbose -config_file /path/to/config/file.json -num_threads [num 1-64]
 ```
+
 * -verbose : Switch to turn on the verbose output.
-
-* -font_path : Path to the TrueType font including the extention. The fonts are usually found in `/usr/share/fonts`, `/usr/local/fonts` etc. on Linux, and `/System/Library/Fonts/` on MacOS.
-
-* -process_hidden_glyphs : Processes hidden glyphs that are not reachable from any character maps included in the original font. For example, 'Computer Modern' fonts have a few thousand glyphs (mostly math symbols) defined but not accessible from any character maps. This option enables the generation of the signed distance data for those glyphs.
-
-* -char_code_range [0X********-0X********] : This option can be specified multiple times. If this option is present, it proceeses the glyphs that correspond to the character codes in the specified ranges only.
-
-* -texture_size [num] : The height and width of the PNG files in pixels. The default value is 512. It  should be a power of 2, as most of the OpenGL implementations do not accept the textures of different sizes.
-
-* -glyph_size_for_sampling [num] : The font size in pixels. The generator draws each glyph to a bitmap of this size to sample the signed distance. It affects the visual quality of the resultant signed distance font. The default value is 1024.
-
-* -ratio_spread_to_glyph [float] : The extra margin around each glyph to sample and to accommodate the signed distance values tapering off. An appropriate range is 0.1 to 0.2. The default is 0.2.
 
 * -num_threads [num 1-32] : The number of threads used for the vicinity search.
 
-* -enable_dead_reckoning : Experimental. Switch to enable the dead reckoning algorithm for faster processing. See [Appendix A](#appendix-a-notes-on-the-dead-reckoning-algorithm).
+* -config_file : A JSON file that contains all the required parameters. The content looks like the following:
+
+```
+{
+    "input fonts" : [
+        {
+            "font name" : "ariel-0x0000-0x0100",
+            "font path" : "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "ranges"    : [
+                "0X0000", "0X0100"
+            ]
+        }
+    ],
+
+    "output" : {
+        "output file name wo ext" : "signed_dist_font",
+        "texture size"            : 512
+    },
+
+    "glyph bitmap size for sampling" : 1024,
+    "ratio spread to glyph"          : 0.2,
+    "process hidden glyphs"          : false,
+    "enable dead reckoning"          : false,
+    "reverse Y-direction for glyphs" : false
+}
+```
+
+* "input fonts" : An array to specify the input fonts to be converted. Currently only one font file is supported.
+
+* "font_name" : The identifier of this font used at the runtime.
+
+* "font_path" : Path to the TrueType font including the extention. The fonts are usually found in `/usr/share/fonts`, `/usr/local/fonts` etc. on Linux, and `/System/Library/Fonts/` on MacOS.
+
+* "ranges" : An array of even number of code points in the '0X'-hexadecimal notation: If this array element is present, each consecutive pair (begin, end past one) represents a range of code points for the glyph generation. It can be used to reduce the output file sizes, by omitting the generation of the signed distance fields for unspecified glyphs.
+
+* "output" : The section for the output specification.
+
+* "output file name wo ext" : A file path without the extension. The tool generates a pair of PNG and TXT files with this file path.
+
+* "texture size" : The height and width of the PNG files in pixels. The default value is 512. It  should be a power of 2, as most of the OpenGL implementations do not accept the textures of different sizes.
+
+* "glyph bitmap size for sampling"  : The font size in pixels. The generator draws each glyph to a bitmap of this size to sample the signed distance. It affects the visual quality of the resultant signed distance font. The default value is 1024.
+
+* "ratio spread to glyph" : The extra margin around each glyph to sample and to accommodate the signed distance values tapering off. An appropriate range is 0.1 to 0.2. The default is 0.2.
+
+* "process hidden glyphs" : Processes hidden glyphs that are not reachable from any character maps included in the original font. For example, 'Computer Modern' fonts have a few thousand glyphs (mostly math symbols) defined but not accessible from any character maps. This option enables the generation of the signed distance data for those glyphs.
+
+* "enable_dead_reckoning" : Experimental. Switch to enable the dead reckoning algorithm for faster processing. See [Appendix A](#appendix-a-notes-on-the-dead-reckoning-algorithm).
+
+* "reverse Y-direction for glyphs" : Set this to true, if you would like to flip all the glyphs vertically.
 
 # PNG & TXT File: Output of the `sdfont_commandline`.
 The output consits of two files: PNG that represents the signed-distance field of each glyph, and an accompanying TXT file that contains the metrics of the fonts necessary to render the glyphs at runtime.

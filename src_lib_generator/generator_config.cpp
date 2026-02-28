@@ -1,4 +1,5 @@
 #include "sdfont/generator/generator_config.hpp"
+#include "nlohmann/json.hpp"
 
 namespace SDFont {
 
@@ -14,6 +15,130 @@ const long   GeneratorConfig::DefaultGlyphBitmapSizeForSampling = 1024 ;
 const bool   GeneratorConfig::DefaultEnableDeadReckoning    = false;
 const bool   GeneratorConfig::DefaultReverseYDirectionForGlyphs = false;
 const bool   GeneratorConfig::DefaultFaceHasGlyphNames = false;
+
+
+const string GeneratorConfig::JSON_KEY_INPUT_FONTS                    = "input fonts";
+const string GeneratorConfig::JSON_KEY_OUTPUT                         = "output";
+const string GeneratorConfig::JSON_KEY_GLYPH_BITMAP_SIZE_FOR_SAMPLING = "glyph bitmap size for sampling";
+const string GeneratorConfig::JSON_KEY_GLYPH_SCALING_FROM_SAMPLING_TO_PACKED_SIGNED_DIST = "glyph scaling from sampling to packed signed dist";
+const string GeneratorConfig::JSON_KEY_RATIO_SPREAD_TO_GLYPH          = "ratio spread to glyph";
+const string GeneratorConfig::JSON_KEY_PROCESS_HIDDEN_GLYPHS          = "process hidden glyphs";
+const string GeneratorConfig::JSON_KEY_ENABLE_DEAD_RECKONING          = "enable dead reckoning";
+const string GeneratorConfig::JSON_KEY_REVERSE_Y_DIRECTION_FOR_GLYPHS = "reverse Y-direction for glyphs";
+const string GeneratorConfig::JSON_KEY_FONT_NAME                      = "font name";
+const string GeneratorConfig::JSON_KEY_FONT_PATH                      = "font path";
+const string GeneratorConfig::JSON_KEY_ENCODING                       = "encoding";
+const string GeneratorConfig::JSON_KEY_RANGES                         = "ranges";
+
+void GeneratorConfig::processJSON( std::stringstream& ss )
+{
+    auto data = nlohmann::json::parse( ss );
+
+    if ( data.contains( JSON_KEY_INPUT_FONTS ) ) {
+
+        processJSON_input_fonts( data[ JSON_KEY_INPUT_FONTS ] );
+    }
+
+    if ( data.contains( JSON_KEY_OUTPUT ) ) {
+
+        processJSON_output( data[ JSON_KEY_OUTPUT ] );
+    }
+
+    if ( data.contains( JSON_KEY_GLYPH_BITMAP_SIZE_FOR_SAMPLING ) ) {
+
+        mGlyphBitmapSizeForSampling = data[ JSON_KEY_GLYPH_BITMAP_SIZE_FOR_SAMPLING ];
+    }
+
+    if ( data.contains( JSON_KEY_GLYPH_SCALING_FROM_SAMPLING_TO_PACKED_SIGNED_DIST ) ) {
+
+        mGlyphScalingFromSamplingToPackedSignedDist = data[ JSON_KEY_GLYPH_SCALING_FROM_SAMPLING_TO_PACKED_SIGNED_DIST ];
+    }
+
+    if ( data.contains( JSON_KEY_RATIO_SPREAD_TO_GLYPH ) ) {
+
+        mRatioSpreadToGlyph = data[ JSON_KEY_RATIO_SPREAD_TO_GLYPH ];
+    }
+
+    if ( data.contains( JSON_KEY_PROCESS_HIDDEN_GLYPHS ) ) {
+
+        mProcessHiddenGlyphs = data[ JSON_KEY_PROCESS_HIDDEN_GLYPHS ];
+    }
+
+    if ( data.contains( JSON_KEY_ENABLE_DEAD_RECKONING ) ) {
+
+        mEnableDeadReckoning = data[ JSON_KEY_ENABLE_DEAD_RECKONING ];
+    }
+
+    if ( data.contains( JSON_KEY_REVERSE_Y_DIRECTION_FOR_GLYPHS ) ) {
+
+        mReverseYDirectionForGlyphs = data[ JSON_KEY_REVERSE_Y_DIRECTION_FOR_GLYPHS ];
+    }
+}
+
+void GeneratorConfig::processJSON_input_fonts( const nlohmann::json& data_array )
+{
+    for ( const auto& data : data_array ) {
+
+        if ( data.contains( JSON_KEY_FONT_NAME ) ) {
+
+            const string font_name = data[ JSON_KEY_FONT_NAME];
+        }
+
+        if ( data.contains( JSON_KEY_FONT_PATH ) ) {
+
+            mFontPath = data[ JSON_KEY_FONT_PATH ];
+        }
+
+        if ( data.contains( JSON_KEY_ENCODING ) ) {
+
+            mEncoding = data[ JSON_KEY_ENCODING ];
+        }
+
+        if ( data.contains( JSON_KEY_RANGES ) ) {       
+
+            mCharCodeRanges = processJSON_ranges( data[ JSON_KEY_RANGES ] );
+        }
+    }
+}
+
+static uint32_t hex_to_long( const string& s ) {
+
+    if ( s.size() < 2 ) {
+        return 0;
+    }
+
+    const auto trimmed_s = s.substr( 2, s.size() - 2 ); // remove "0X"
+
+    return stoul( trimmed_s, 0, 16);
+}
+
+vector< pair< uint32_t, uint32_t > > GeneratorConfig::processJSON_ranges( const nlohmann::json& data_array )
+{
+    vector< uint32_t > values;
+
+    for ( const auto& data : data_array ) {
+
+        const std::string value_str = data;
+
+        values.push_back( hex_to_long( value_str ) );
+    }
+
+    vector< pair< uint32_t, uint32_t > > pairs;
+
+    for ( int32_t i = 0; i < static_cast< int32_t >( values.size() ) - 1 ; i += 2 ) {
+
+        pairs.push_back( pair( values[i], values[i+1] ) );
+        
+    }
+    
+    return pairs;
+}
+
+void GeneratorConfig::processJSON_output( const nlohmann::json& data )
+{
+    mOutputFileName    = data[ "output file name wo ext" ];
+    mOutputTextureSize = data[ "texture size" ];
+}
 
 void GeneratorConfig::trim( string& line ) const
 {

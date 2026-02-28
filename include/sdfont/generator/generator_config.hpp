@@ -2,12 +2,15 @@
 #define __SDFONT_GENERATOR_CONFIG_HPP__
 
 #include <string>
+#include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cmath>
 #include <vector>
 #include <utility>
+
+#include "nlohmann/json.hpp"
 
 namespace SDFont {
 
@@ -34,6 +37,10 @@ class GeneratorConfig {
         {;}
 
     virtual ~GeneratorConfig(){;}
+
+    void processJSON( std::stringstream& ss );
+
+
 
     void setFontPath           ( string s ) { mFontPath       = s ; }
     void setOutputFileName     ( string s ) { mOutputFileName = s ; }
@@ -99,6 +106,10 @@ class GeneratorConfig {
 
   private:
 
+    void                                 processJSON_input_fonts( const nlohmann::json& data );
+    void                                 processJSON_output     ( const nlohmann::json& data );
+    vector< pair< uint32_t, uint32_t > > processJSON_ranges     ( const nlohmann::json& data );
+
     string mFontPath ;
     string mOutputFileName ;
     long   mOutputTextureSize ;
@@ -107,7 +118,7 @@ class GeneratorConfig {
     float  mRatioSpreadToGlyph;
     bool   mProcessHiddenGlyphs;
     long   mNumThreads;
-    vector< pair< long, long > >
+    vector< pair< uint32_t, uint32_t > >
            mCharCodeRanges;
     string mEncoding;
     bool   mEnableDeadReckoning;
@@ -126,6 +137,19 @@ class GeneratorConfig {
     static const bool   DefaultEnableDeadReckoning;
     static const bool   DefaultReverseYDirectionForGlyphs;
     static const bool   DefaultFaceHasGlyphNames;
+
+    static const string JSON_KEY_INPUT_FONTS;
+    static const string JSON_KEY_OUTPUT;
+    static const string JSON_KEY_GLYPH_BITMAP_SIZE_FOR_SAMPLING;
+    static const string JSON_KEY_GLYPH_SCALING_FROM_SAMPLING_TO_PACKED_SIGNED_DIST;
+    static const string JSON_KEY_RATIO_SPREAD_TO_GLYPH;
+    static const string JSON_KEY_PROCESS_HIDDEN_GLYPHS;
+    static const string JSON_KEY_ENABLE_DEAD_RECKONING;
+    static const string JSON_KEY_REVERSE_Y_DIRECTION_FOR_GLYPHS;
+    static const string JSON_KEY_FONT_NAME;
+    static const string JSON_KEY_FONT_PATH;
+    static const string JSON_KEY_ENCODING;
+    static const string JSON_KEY_RANGES;
 
     void trim( string& line ) const;
     bool isCommentLine( const std::string& line ) const;
