@@ -471,13 +471,13 @@ class Word {
 
   public:
     Word(
-        SDFont::RuntimeHelper& helper,
+        SDFont::FontMetrics&   metrics,
         const string           str,
         const float            fontSize,
         const float            spreadRatio,
         const float            letterSpacing
     ):
-        mHelper        (helper),
+        mMetrics       (metrics),
         mString        (str),
         mLeftX         (0.0),
         mBaselineY     (0.0),
@@ -495,7 +495,7 @@ class Word {
 
         utf8::utf8to32( c_str, c_str + strlen( c_str ), back_inserter( unicodeSequence ) );
 
-        mHelper.getGlyphOriginsWidthAndHeight(
+        mMetrics.getGlyphOriginsWidthAndHeight(
 
             unicodeSequence,
             -1,
@@ -535,7 +535,7 @@ class Word {
 
         vector< SDFont::GlyphBound > bounds;
 
-        mHelper.getBoundingBoxes(
+        mMetrics.getBoundingBoxes(
             mFontSize,
             mSpreadRatio,
             mGlyphs,
@@ -543,20 +543,20 @@ class Word {
             bounds
         );
 
-        mHelper.generateOpenGLDrawElements (
+        mMetrics.generateOpenGLDrawElements (
             bounds,
             mZ,
-            &( elements[   SDFont::RuntimeHelper::NUM_FLOATS_PER_GLYPH
+            &( elements[   SDFont::FontMetrics::NUM_FLOATS_PER_GLYPH
                          * startIndex                                   ] ) ,
-            SDFont::RuntimeHelper::NUM_POINTS_PER_GLYPH * startIndex,
-            & ( indices[   SDFont::RuntimeHelper::NUM_INDICES_PER_GLYPH
+            SDFont::FontMetrics::NUM_POINTS_PER_GLYPH * startIndex,
+            & ( indices[   SDFont::FontMetrics::NUM_INDICES_PER_GLYPH
                          * startIndex                                   ] )
         );
     }
 
     ~Word() {;}
 
-    SDFont::RuntimeHelper&   mHelper;
+    SDFont::FontMetrics&     mMetrics;
     string                   mString;
     float                    mWidth;
     float                    mHeight;
@@ -577,8 +577,8 @@ class Line {
 
   public:
 
-    Line(SDFont::RuntimeHelper& helper, string str, float fontSize, float spreadRatio ) :
-        mHelper ( helper ),
+    Line(SDFont::FontMetrics& metrics, string str, float fontSize, float spreadRatio ) :
+        mMetrics( metrics ),
         mWidth  ( 1.0    )
     {
 
@@ -586,7 +586,7 @@ class Line {
 
         splitLine( str, strs, ' ' );
         for (auto& s : strs) {
-            mWords.emplace_back(helper, s, fontSize, spreadRatio, 1.0 );
+            mWords.emplace_back(metrics, s, fontSize, spreadRatio, 1.0 );
         }
     }
 
@@ -671,7 +671,7 @@ class Line {
 
   private:
 
-    SDFont::RuntimeHelper& mHelper;
+    SDFont::FontMetrics&   mMetrics;
     float                  mLeftX;
     float                  mBaselineY;
     float                  mWidth;
@@ -683,8 +683,8 @@ class Paragraph {
 
   public:
 
-    Paragraph(SDFont::RuntimeHelper& helper, string str, float fontSize, float spreadRatio) :
-        mHelper ( helper ),
+    Paragraph(SDFont::FontMetrics& metrics, string str, float fontSize, float spreadRatio) :
+        mMetrics( metrics ),
         mWidth  ( 1.0    )
     {
 
@@ -692,7 +692,7 @@ class Paragraph {
 
         splitLine( str, strs, '\n' );
         for (auto& s : strs) {
-            mLines.emplace_back(helper, s, fontSize, spreadRatio);
+            mLines.emplace_back(metrics, s, fontSize, spreadRatio);
         }
     }
 
@@ -791,7 +791,7 @@ class Paragraph {
 
   private:
 
-    SDFont::RuntimeHelper& mHelper;
+    SDFont::FontMetrics&   mMetrics;
     float                  mLeftX;
     float                  mBottomBaselineY;
     float                  mWidth;
@@ -807,11 +807,11 @@ class SequenceElement {
 
   public:
     SequenceElement(
-        SDFont::RuntimeHelper&        helper,
+        SDFont::FontMetrics&          metrics,
         SDFont::VanillaShaderManager& shader
     ) :
         mCurTime   ( 0.0     ),
-        mHelper    ( helper  ),
+        mMetrics   ( metrics ),
         mShader    ( shader  ),
         mGLattr    ( nullptr ),
         mGLindices ( nullptr ) {;}
@@ -838,13 +838,13 @@ class SequenceElement {
         mGLattr    = (float*)malloc (
 
                                sizeof(float)
-                             * SDFont::RuntimeHelper::NUM_FLOATS_PER_GLYPH
+                             * SDFont::FontMetrics::NUM_FLOATS_PER_GLYPH
                              * mNumElements
                      );
         mGLindices = (GLuint*) malloc (
 
                                sizeof(GLuint)
-                             * SDFont::RuntimeHelper::NUM_INDICES_PER_GLYPH
+                             * SDFont::FontMetrics::NUM_INDICES_PER_GLYPH
                              * mNumElements
                      );
 
@@ -853,9 +853,9 @@ class SequenceElement {
     void draw() {
         mShader.draw(
             mGLattr ,
-            SDFont::RuntimeHelper::NUM_FLOATS_PER_GLYPH  * mNumElements ,
+            SDFont::FontMetrics::NUM_FLOATS_PER_GLYPH  * mNumElements ,
             mGLindices ,
-            SDFont::RuntimeHelper::NUM_INDICES_PER_GLYPH * mNumElements ,
+            SDFont::FontMetrics::NUM_INDICES_PER_GLYPH * mNumElements ,
             mEffect ,
             mLightingEffect,
             mLowThreshold ,
@@ -868,7 +868,7 @@ class SequenceElement {
     }
 
     float                         mCurTime;
-    SDFont::RuntimeHelper&        mHelper;
+    SDFont::FontMetrics&          mMetrics;
     SDFont::VanillaShaderManager& mShader;
 
     int                  mEffect ;
@@ -894,15 +894,15 @@ class SeqPrologue :public SequenceElement {
   public:
 
     SeqPrologue(
-        SDFont::RuntimeHelper&        helper,
+        SDFont::FontMetrics&          metrics,
         SDFont::VanillaShaderManager& shader,
         float                         fontSize,
         float                         spreadRatio
-    ) : SequenceElement( helper, shader )
+    ) : SequenceElement( metrics, shader )
     {
 
-        Line line1 ( mHelper, mStr1, fontSize, spreadRatio );
-        Line line2 ( mHelper, mStr2, fontSize, spreadRatio );
+        Line line1 ( mMetrics, mStr1, fontSize, spreadRatio );
+        Line line2 ( mMetrics, mStr2, fontSize, spreadRatio );
 
         mNumElements = line1.len() + line2.len();
 
@@ -923,7 +923,7 @@ class SeqPrologue :public SequenceElement {
         mLightingEffect = false;
         mLowThreshold   = 0.45;
         mHighThreshold  = 0.55;
-        mSmoothing      = 2.0/16.0;
+        mSmoothing      = 0.5/16.0;
         mBaseColor      = glm::vec3( 1.0, 1.0, 1.0 );
         mBorderColor    = glm::vec3( 1.0, 1.0, 1.0 );
 
@@ -982,15 +982,15 @@ class SeqTitle :public SequenceElement {
   public:
 
     SeqTitle(
-        SDFont::RuntimeHelper&        helper,
+        SDFont::FontMetrics&          metrics,
         SDFont::VanillaShaderManager& shader,
         float                         fontSize,
         float                         spreadRatio
-    ) : SequenceElement( helper, shader )
+    ) : SequenceElement( metrics, shader )
     {
 
-        Line line1 ( mHelper, mStr1, fontSize, spreadRatio );
-        Line line2 ( mHelper, mStr2, fontSize, spreadRatio );
+        Line line1 ( mMetrics, mStr1, fontSize, spreadRatio );
+        Line line2 ( mMetrics, mStr2, fontSize, spreadRatio );
 
         mNumElements = line1.len() + line2.len();
 
@@ -1078,18 +1078,17 @@ class SeqMainRoll :public SequenceElement {
   public:
 
     SeqMainRoll(
-        SDFont::RuntimeHelper&        helper,
+        SDFont::FontMetrics&          metrics,
         SDFont::VanillaShaderManager& shader ,
         float                         fontSize,
         float                         spreadRatio
-    ) : SequenceElement( helper, shader )
+    ) : SequenceElement( metrics, shader )
     {
-
-        Line      line1 ( mHelper, mEpisode   , fontSize, spreadRatio );
-        Line      line2 ( mHelper, mTitle     , fontSize, spreadRatio );
-        Paragraph para1 ( mHelper, mParagraph1, fontSize, spreadRatio );
-        Paragraph para2 ( mHelper, mParagraph2, fontSize, spreadRatio );
-        Paragraph para3 ( mHelper, mParagraph3, fontSize, spreadRatio );
+        Line      line1 ( mMetrics, mEpisode   , fontSize, spreadRatio );
+        Line      line2 ( mMetrics, mTitle     , fontSize, spreadRatio );
+        Paragraph para1 ( mMetrics, mParagraph1, fontSize, spreadRatio );
+        Paragraph para2 ( mMetrics, mParagraph2, fontSize, spreadRatio );
+        Paragraph para3 ( mMetrics, mParagraph3, fontSize, spreadRatio );
 
         mNumElements =   line1.len() + line2.len()
                        + para1.len() + para2.len() + para3.len();
@@ -1267,13 +1266,15 @@ int main( int argc, char* argv[] )
     SDFont::RuntimeHelper helper ( baseFilePathWOExt + extTXT );
     SDFont::TextureLoader loader ( baseFilePathWOExt + extPNG );
 
+    SDFont::FontMetrics* metrics = helper.mFontMetrics.begin()->second;
+
     SDFont::VanillaShaderManager shader ( loader.GLtexture(), 0 );
 
     glfw.configGLFW();
 
-    SeqPrologue seqElem01( helper, shader, 0.2, 0.2 );
-    SeqTitle    seqElem02( helper, shader, 1.0, 0.4 );
-    SeqMainRoll seqElem03( helper, shader, 0.15, 0.2 );
+    SeqPrologue seqElem01( *metrics, shader, 0.2, 0.0 );
+    SeqTitle    seqElem02( *metrics, shader, 1.0, 0.2 );
+    SeqMainRoll seqElem03( *metrics, shader, 0.15, 0.0 );
 
     DeltaTime dt;
     double    absT = 0.0;

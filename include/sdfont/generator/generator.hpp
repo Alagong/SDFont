@@ -12,12 +12,97 @@
 #include "sdfont/generator/internal_glyph_thread_driver.hpp"
 #include "sdfont/generator/generator_config.hpp"
 #include "sdfont/char_map.hpp"
+#include "sdfont/free_type_utilities.hpp"
 
 namespace SDFont {
 
 class Generator {
 
   public:
+
+    class InputFont {
+    public:
+        InputFont():
+            mFtFace           { nullptr },
+            mFontName         { "" },
+            mFontPath         { "" },
+            mFaceHasGlyphNames{ false }
+        {
+        }
+
+        ~InputFont()
+        {
+            for ( auto* g : mGlyphs ) {
+
+                delete g;
+            }
+
+
+        }
+
+        bool isInACharCodeRange( const long charcode ) const
+        {
+            if ( mCharCodeRanges.empty() ) {
+                return true;
+            }
+            for ( const auto& pair: mCharCodeRanges ) {
+                if ( pair.first <= charcode && charcode < pair.second ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void generateCharMaps( int activeCharmapIndex )
+        {
+            for ( int i = 0; i < mFtFace->num_charmaps; i++ ) {
+
+                const bool is_default = ( i == activeCharmapIndex );
+
+                auto* ftCharmap = mFtFace->charmaps[i];
+
+                CharMap charMap(
+                    is_default,
+                    FTUtilStringEncoding( ftCharmap->encoding ),
+                    ftCharmap->platform_id,
+                    ftCharmap->encoding_id
+                );
+
+                auto ftError = FT_Set_Charmap( mFtFace, ftCharmap );
+
+                if ( ftError != FT_Err_Ok ) {
+
+                    cerr << "FreeType error: FT_Set_Charmap" << ftError << "\n";
+
+                    continue;
+                }
+
+                FT_UInt gindex = 0;
+
+                FT_ULong charcode = FT_Get_First_Char( mFtFace, &gindex );
+
+                while ( gindex != 0 ) {
+
+                    if ( isInACharCodeRange( charcode ) ) {
+
+                        charMap.m_char_to_codepoint.insert( pair( charcode, gindex ) );
+                    }
+
+                    charcode = FT_Get_Next_Char( mFtFace, charcode, &gindex );
+                }
+                mCharMaps.push_back( charMap );
+            }
+        }
+
+        FT_Face                              mFtFace;
+        string                               mFontName;
+        string                               mFontPath;
+        vector< pair< uint32_t, uint32_t > > mCharCodeRanges;
+        vector< CharMap >                    mCharMaps;
+        set< uint32_t >                      mCodepointsToProcess;
+        bool                                 mFaceHasGlyphNames;
+        vector< InternalGlyphForGen* >       mGlyphs;
+    };
 
     Generator(GeneratorConfig& conf, bool verbose);
 
@@ -28,7 +113,7 @@ class Generator {
     unsigned char** textureBitmap();
     void releaseTexture ();
     bool emitFileMetrics ();
-    void generateMetrics(float& margin, vector<Glyph>& glyphs);
+    void generateMetrics( const string& fontName, float& margin, vector<Glyph>& glyphs);
 
     static const string Encoding_unicode;
     static const string Encoding_ms_symbol;
@@ -48,30 +133,21 @@ class Generator {
 
     bool  initializeFreeType      ( ) ;
     bool  generateGlyphs          ( ) ;
-    CharMap generateCharMap       ( FT_Face face, FT_CharMapRec* char_map, const bool is_default );
     void  generateExtraGlyphs     ( );
-    std::pair<float, float>
-          findMeanGlyphDimension  ( ) ;
-    void  addExtraGlyph           ( const long code_point, const string& glyph_name, const std::pair<float, float>& dim, const std::string& file_name );
     void  getKernings             ( ) ;
     long  fitGlyphsToTexture      ( ) ;
-    long  findBestWidthForDefaultFontSize( long& bestHeight, long& maxNumGlyphsPerEdge );
-    long  findHeightFromWidth     ( const long width, long& maxNumGlyphsPerEdge );
+    long  findBestWidthForDefaultFontSize( const vector< InternalGlyphForGen* >& allGlyphs, long& bestHeight, long& maxNumGlyphsPerEdge );
+    long  findHeightFromWidth     ( const vector< InternalGlyphForGen* >& allGlyphs, const long width, long& maxNumGlyphsPerEdge );
     bool  generateGlyphBitmaps    ( long bestWidthForDefaultFontSize ) ;
     bool  generateTexture         ( bool reverseY ) ;
-    FT_Error setEncoding          ( const string& s );
+    FT_Error setEncoding          ( const string& s, InputFont& inputFont );
 
     GeneratorConfig&               mConf;
     bool                           mVerbose;
     FT_Library                     mFtHandle;
-    FT_Face                        mFtFace;
-    vector< InternalGlyphForGen* > mGlyphs;
+    vector< InputFont >            mInputFonts;
     unsigned char*                 mPtrMain;
     unsigned char**                mPtrArray;
-
-    vector< CharMap >              mCharMaps;
-    set< uint32_t >                mCodepointsToProcess;
-
     InternalGlyphThreadDriver*     mThreadDriver;
 };
 

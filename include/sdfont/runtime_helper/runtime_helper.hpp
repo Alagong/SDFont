@@ -48,7 +48,7 @@ class GlyphBound {
     GlyphBound( const Rect& frame, const Rect& texture ) noexcept : mFrame{frame}, mTexture{texture} {}
 };
 
-class RuntimeHelper {
+class FontMetrics {
 
   public:
 
@@ -57,9 +57,14 @@ class RuntimeHelper {
     static const int NUM_FLOATS_PER_GLYPH;
     static const int NUM_INDICES_PER_GLYPH;
 
-    RuntimeHelper( string fileName );
+    FontMetrics(
+        const float              spreadInTexture,
+        const float              spreadInFontMetrics,
+        const map< long, Glyph>& glyphs,
+        const vector< CharMap >& charMaps
+    );
 
-    virtual ~RuntimeHelper();
+    virtual ~FontMetrics();
 
     /** @brief
      *
@@ -458,6 +463,15 @@ class RuntimeHelper {
     float             mSpreadInFontMetrics;
     map< long, Glyph> mGlyphs;
     vector< CharMap > mCharMaps;
+};
+
+class RuntimeHelper {
+public:
+    RuntimeHelper( const string& fileName );
+
+    ~RuntimeHelper();
+
+    map< string, FontMetrics* > mFontMetrics; 
 };
 
 

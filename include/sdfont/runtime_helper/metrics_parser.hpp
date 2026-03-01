@@ -10,34 +10,38 @@ using namespace std;
 
 namespace SDFont {
 
+class FontMetrics;
+
 class MetricsParser {
 
   public:
-
 
     /** @brief constructor
      *
      *  @param  G (in/out) graph to which nodes and edges are to be added
      */
-    MetricsParser( map< long, Glyph>& glyphs, float& spreadInTexture, float& spreadInFontMetrics, vector< CharMap >& charMaps ):
-        mSpreadInTexture(spreadInTexture),
-        mSpreadInFontMetrics(spreadInFontMetrics),
-        mGlyphs(glyphs),
-        mCharMaps( charMaps ) {;}
+    MetricsParser()
+        :mSpreadInTexture    { 0.0f }
+        ,mSpreadInFontMetrics{ 0.0f }
+    {
+        ;
+    }
 
-
-    virtual ~MetricsParser(){;}
-
+    ~MetricsParser(){
+        ;
+    }
 
     /** @brief
      *
      *  @param  filename (in): name of the file to be opened and parsed.
      *
      */
-    bool parseSpec( string fileName );
+    bool parseSpec( const string& fileName, map< string, FontMetrics* >& fontMetrics );
 
     static const string SPREAD_IN_TEXTURE;
     static const string SPREAD_IN_FONT_METRICS;
+    static const string FONT_BEGIN;
+    static const string FONT_END;
     static const string GLYPHS;
     static const string KERNINGS;
     static const string CHAR_MAPS;
@@ -47,6 +51,8 @@ class MetricsParser {
 
     enum parseState {
         INIT,
+        IN_FONT_BEGIN,
+        IN_FONT_END,
         IN_SPREAD_IN_TEXTURE,
         IN_SPREAD_IN_FONT_METRICS,
         IN_GLYPHS,
@@ -55,18 +61,26 @@ class MetricsParser {
         END
     };
 
-
     void trim( string& line );
 
 
     bool isSectionHeader( string line, enum parseState& state );
 
+    bool isFontBegin( string line, enum parseState& state );
+
+    bool isFontEnd( string line, enum parseState& state );
 
     bool isCommentLine  ( string line );
 
 
     size_t splitLine    ( const string& txt, vector<string>& strs, char ch );
 
+    void handleFontName( 
+        string line,
+        string filename,
+        long   lineNumber,
+        bool&  errorFlag
+    );
 
     void handleSpreadInTexture(
         string line,
@@ -104,6 +118,12 @@ class MetricsParser {
         bool&  errorFlag
     );
 
+    void saveFontMetrics( 
+        map< string, FontMetrics* >& fontMetrics,
+        string fileName,
+        long   lineNumber,
+        bool&  errorFlag
+    );
 
     void emitError(
         string fileName,
@@ -113,12 +133,13 @@ class MetricsParser {
     );
 
 
-    float& mSpreadInTexture;
-    float& mSpreadInFontMetrics;
+    float mSpreadInTexture;
+    float mSpreadInFontMetrics;
 
     /** @brief used during parsing to find a node from a node number.*/
-    map< long, Glyph >& mGlyphs;
-    vector< CharMap >&  mCharMaps;
+    string             mFontName;
+    map< long, Glyph > mGlyphs;
+    vector< CharMap >  mCharMaps;
 };
 
 

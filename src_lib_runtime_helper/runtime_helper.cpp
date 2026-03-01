@@ -5,20 +5,31 @@
 
 namespace SDFont {
 
-const int RuntimeHelper::NUM_POINTS_PER_GLYPH  = 4;
-const int RuntimeHelper::NUM_FLOATS_PER_POINT  = 8;
-const int RuntimeHelper::NUM_FLOATS_PER_GLYPH  = 4 * 8;
-const int RuntimeHelper::NUM_INDICES_PER_GLYPH = 6;
+const int FontMetrics::NUM_POINTS_PER_GLYPH  = 4;
+const int FontMetrics::NUM_FLOATS_PER_POINT  = 8;
+const int FontMetrics::NUM_FLOATS_PER_GLYPH  = 4 * 8;
+const int FontMetrics::NUM_INDICES_PER_GLYPH = 6;
 
-RuntimeHelper::RuntimeHelper( string fileName ): mSpreadInTexture(0.0), mSpreadInFontMetrics(0.0)
+FontMetrics::FontMetrics(
+    const float              spreadInTexture,
+    const float              spreadInFontMetrics,
+    const map< long, Glyph>& glyphs,
+    const vector< CharMap >& charMaps
+):
+    mSpreadInTexture    { spreadInTexture },
+    mSpreadInFontMetrics{ spreadInFontMetrics },
+    mGlyphs             { glyphs },
+    mCharMaps           { charMaps }
 {
-    MetricsParser parser( mGlyphs, mSpreadInTexture, mSpreadInFontMetrics, mCharMaps );
-    parser.parseSpec( fileName );
+    ;
 }
 
-RuntimeHelper::~RuntimeHelper() {;}
+FontMetrics::~FontMetrics()
+{
+    ;
+}
 
-const Glyph* RuntimeHelper::getGlyph( const long c ) const
+const Glyph* FontMetrics::getGlyph( const long c ) const
 {
     auto git = mGlyphs.find( c );
 
@@ -32,7 +43,7 @@ const Glyph* RuntimeHelper::getGlyph( const long c ) const
     }
 }
 
-int32_t RuntimeHelper::getActiveCharMapIndex() const
+int32_t FontMetrics::getActiveCharMapIndex() const
 {
     for ( int32_t i = 0; i < mCharMaps.size(); i++ ) {
         const auto& charMap = mCharMaps[i];
@@ -43,7 +54,7 @@ int32_t RuntimeHelper::getActiveCharMapIndex() const
     return -1;
 }
 
-void RuntimeHelper::getGlyphOriginsWidthAndHeight(
+void FontMetrics::getGlyphOriginsWidthAndHeight(
         
     const vector<uint32_t>& s,
     const int32_t           charMapIndex,
@@ -124,7 +135,7 @@ void RuntimeHelper::getGlyphOriginsWidthAndHeight(
     height = aboveBaselineY + belowBaselineY;
 }
 
-void RuntimeHelper::getBoundingBoxes(
+void FontMetrics::getBoundingBoxes(
 
     const float                   fontSize,
     const float                   spreadRatio,
@@ -172,7 +183,7 @@ void RuntimeHelper::getBoundingBoxes(
     }
 }
 
-void RuntimeHelper::getMetrics(
+void FontMetrics::getMetrics(
 
     const vector<uint32_t>& s,
     const int32_t           charMapIndex,
@@ -207,7 +218,7 @@ void RuntimeHelper::getMetrics(
 }
 
 
-void RuntimeHelper::getMetricsNormalized(
+void FontMetrics::getMetricsNormalized(
 
     const vector<uint32_t>& s,
     const int32_t           charMapIndex,
@@ -310,7 +321,7 @@ void RuntimeHelper::getMetricsNormalized(
 }
 
 
-bool RuntimeHelper::getBoundingBoxes(
+bool FontMetrics::getBoundingBoxes(
 
     const vector< Glyph* >& glyphs,
     const vector< float >&  posXs,
@@ -357,7 +368,7 @@ bool RuntimeHelper::getBoundingBoxes(
     return true;
 }
 
-void RuntimeHelper::generateOpenGLDrawElements (
+void FontMetrics::generateOpenGLDrawElements (
 
     const vector< GlyphBound >& bounds,
     const float                 Z,
@@ -423,7 +434,7 @@ void RuntimeHelper::generateOpenGLDrawElements (
 }
 
 
-void RuntimeHelper::generateOpenGLDrawElementsForOneChar (
+void FontMetrics::generateOpenGLDrawElementsForOneChar (
 
     const Glyph&       g,
     const float        leftX,
@@ -491,7 +502,7 @@ void RuntimeHelper::generateOpenGLDrawElementsForOneChar (
 }
 
 
-void RuntimeHelper::generateOpenGLDrawElements (
+void FontMetrics::generateOpenGLDrawElements (
 
     const vector< Glyph* >& glyphs,
     const vector< float >&  posXs,
@@ -537,5 +548,19 @@ void RuntimeHelper::generateOpenGLDrawElements (
     }
 }
 
+RuntimeHelper::RuntimeHelper( const string& fileName )
+{
+    MetricsParser parser;
+
+    parser.parseSpec( fileName, mFontMetrics );
+}
+
+RuntimeHelper::~RuntimeHelper()
+{
+    for ( auto& pa : mFontMetrics ) {
+
+        delete pa.second;
+    }
+}
 
 } // namespace SDFont

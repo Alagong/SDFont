@@ -230,23 +230,30 @@ Usage: sdfont_generator -verbose -config_file /path/to/config/file.json -num_thr
             "ranges"    : [
                 "0X0000", "0X0100"
             ]
+        },
+        {
+            "font name" : "times-new-roman-0x0000-0x0100",
+            "font path" : "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+            "ranges"    : [
+                "0X0000", "0X0100"
+            ]
         }
     ],
 
     "output" : {
         "output file name wo ext" : "signed_dist_font",
-        "texture size"            : 512
+        "texture size"            : 1024
     },
 
     "glyph bitmap size for sampling" : 1024,
-    "ratio spread to glyph"          : 0.2,
+    "ratio spread to glyph"          : 0.1,
     "process hidden glyphs"          : false,
     "enable dead reckoning"          : false,
     "reverse Y-direction for glyphs" : false
 }
 ```
 
-* "input fonts" : An array to specify the input fonts to be converted. Currently only one font file is supported.
+* "input fonts" : An array to specify the input fonts to be converted.
 
 * "font_name" : The identifier of this font used at the runtime.
 
@@ -262,7 +269,7 @@ Usage: sdfont_generator -verbose -config_file /path/to/config/file.json -num_thr
 
 * "glyph bitmap size for sampling"  : The font size in pixels. The generator draws each glyph to a bitmap of this size to sample the signed distance. It affects the visual quality of the resultant signed distance font. The default value is 1024.
 
-* "ratio spread to glyph" : The extra margin around each glyph to sample and to accommodate the signed distance values tapering off. An appropriate range is 0.1 to 0.2. The default is 0.2.
+* "ratio spread to glyph" : The extra margin around each glyph to sample and to accommodate the signed distance values tapering off. An appropriate range is 0.05 to 0.2. The default is 0.1.
 
 * "process hidden glyphs" : Processes hidden glyphs that are not reachable from any character maps included in the original font. For example, 'Computer Modern' fonts have a few thousand glyphs (mostly math symbols) defined but not accessible from any character maps. This option enables the generation of the signed distance data for those glyphs.
 

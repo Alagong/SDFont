@@ -5,11 +5,14 @@
 #include <vector>
 
 #include "sdfont/runtime_helper/metrics_parser.hpp"
+#include "sdfont/runtime_helper/runtime_helper.hpp"
 
 namespace SDFont {
 
 const std::string MetricsParser::SPREAD_IN_TEXTURE      = "SPREAD IN TEXTURE";
 const std::string MetricsParser::SPREAD_IN_FONT_METRICS = "SPREAD IN FONT METRICS";
+const std::string MetricsParser::FONT_BEGIN             = "FONT BEGIN";
+const std::string MetricsParser::FONT_END               = "FONT END";
 const std::string MetricsParser::GLYPHS                 = "GLYPHS";
 const std::string MetricsParser::KERNINGS               = "KERNINGS";
 const std::string MetricsParser::CHAR_MAPS              = "CHAR MAPS";
@@ -28,7 +31,7 @@ void MetricsParser::trim( string& line ) {
     }
 }
 
-bool MetricsParser::parseSpec( string fileName )
+bool MetricsParser::parseSpec( const string& fileName, map< string, FontMetrics* >& fontMetrics )
 {
 
     ifstream        is( fileName.c_str() );
@@ -59,6 +62,17 @@ bool MetricsParser::parseSpec( string fileName )
             continue;
         }
 
+        if( isFontBegin( line, state ) ) {
+
+            continue;
+        }
+
+        if( isFontEnd( line, state ) ) {
+
+            saveFontMetrics( fontMetrics, fileName, lineNumber, error );
+            continue;
+        }
+
         if( isSectionHeader( line, state ) ) {
             continue;
         }
@@ -68,6 +82,15 @@ bool MetricsParser::parseSpec( string fileName )
           case INIT:
 
             emitError     ( fileName, lineNumber, "", error );
+            break;
+
+          case IN_FONT_BEGIN:
+            handleFontName( line, fileName, lineNumber, error );
+            state = INIT;
+            break;
+
+          case IN_FONT_END:
+            state = INIT;
             break;
 
           case IN_SPREAD_IN_TEXTURE:
@@ -146,6 +169,27 @@ bool MetricsParser::isSectionHeader (
     return false;
 }
 
+bool MetricsParser::isFontBegin( string line, enum parseState& state )
+{
+    if ( line.compare( 0, FONT_BEGIN.size(), FONT_BEGIN ) == 0 ) {
+
+        state = IN_FONT_BEGIN;
+        return true;
+    }
+
+    return false;
+}
+
+bool MetricsParser::isFontEnd( string line, enum parseState& state )
+{
+    if ( line.compare( 0, FONT_END.size(), FONT_END ) == 0 ) {
+
+        state = IN_FONT_END;
+        return true;
+    }
+
+    return false;
+}
 
 void MetricsParser::emitError(
 
@@ -208,6 +252,16 @@ size_t MetricsParser::splitLine(
     }
 
     return strs.size();
+}
+
+
+void MetricsParser::handleFontName( 
+    string line,
+    string filename,
+    long   lineNumber,
+    bool&  errorFlag
+) {
+    mFontName = line;
 }
 
 
@@ -371,6 +425,22 @@ void MetricsParser::handleCharMap (
     }
 
     mCharMaps.push_back( mp );
+}
+
+void MetricsParser::saveFontMetrics( 
+    map< string, FontMetrics* >& fontMetrics,
+    string fileName,
+    long   lineNumber,
+    bool&  errorFlag
+) {
+    auto* metrics = new FontMetrics(
+        mSpreadInTexture,
+        mSpreadInTexture,
+        mGlyphs,
+        mCharMaps
+    );
+
+    fontMetrics.insert( std::pair( mFontName, metrics ) );
 }
 
 } // namespace SDFont

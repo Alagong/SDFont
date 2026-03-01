@@ -20,8 +20,47 @@ class GeneratorConfig {
 
   public:
 
+    class InputFont {
+
+        static const string DefaultFontName;
+        static const string DefaultFontPath;
+
+    public:
+        InputFont():
+           mFontName{ DefaultFontName },
+           mFontPath{ DefaultFontPath },
+           mCharCodeRanges{}
+        {
+        }
+
+        void setFontName( string s )
+        {
+            mFontName = s;
+        }
+
+        void setFontPath( string s )
+        {
+            mFontPath = s;
+        }
+
+        void addCharCodeRange( const uint32_t s, const uint32_t f )
+        {
+            mCharCodeRanges.push_back( std::pair( s, f ) );
+        }
+
+        string fontPath() const
+        {
+            return mFontPath;
+        }
+
+        void processJSON( const nlohmann::json& data );
+
+        string                               mFontName;
+        string                               mFontPath;
+        vector< pair< uint32_t, uint32_t > > mCharCodeRanges;
+    };
+
     GeneratorConfig():
-        mFontPath                   { DefaultFontPath },
         mOutputFileName             { DefaultOutputFileName },
         mOutputTextureSize          { DefaultOutputTextureSize },
         mGlyphScalingFromSamplingToPackedSignedDist
@@ -32,17 +71,13 @@ class GeneratorConfig {
         mNumThreads                 { DefaultNumThreads },
         mEncoding                   { DefaultEncoding },
         mEnableDeadReckoning        { DefaultEnableDeadReckoning },
-        mReverseYDirectionForGlyphs { DefaultReverseYDirectionForGlyphs },
-        mFaceHasGlyphNames          { DefaultFaceHasGlyphNames }
+        mReverseYDirectionForGlyphs { DefaultReverseYDirectionForGlyphs }
         {;}
 
     virtual ~GeneratorConfig(){;}
 
     void processJSON( std::stringstream& ss );
 
-
-
-    void setFontPath           ( string s ) { mFontPath       = s ; }
     void setOutputFileName     ( string s ) { mOutputFileName = s ; }
     void setOutputTextureSize  ( long   v ) { mOutputTextureSize    = v ; }
     void setGlyphBitmapSizeForSampling
@@ -50,8 +85,6 @@ class GeneratorConfig {
     void setRatioSpreadToGlyph ( float v  ) { mRatioSpreadToGlyph = v ; }
     void setProcessHiddenGlyphs( const bool b )
                                             { mProcessHiddenGlyphs = b ; }
-    void addCharCodeRange      ( const uint32_t s, const uint32_t f )
-                                            { mCharCodeRanges.push_back( std::pair( s, f ) ); }
     void setNumThreads         ( long v   ) { mNumThreads = v ; }
     void setGlyphScalingFromSamplingToPackedSignedDist
                                ( float v  ) { mGlyphScalingFromSamplingToPackedSignedDist = v; }
@@ -60,7 +93,6 @@ class GeneratorConfig {
     void setReverseYDirectionForGlyphs
                                ( bool b )   { mReverseYDirectionForGlyphs = b; }
 
-    string fontPath()          const { return mFontPath ;                         }
     string outputFileName()    const { return mOutputFileName ;                   }
     long   outputTextureSize() const { return mOutputTextureSize ;                }
     long   defaultRatioSpreadToGlyph()
@@ -88,44 +120,25 @@ class GeneratorConfig {
     void   emitVerbose () const;
     void   outputMetricsHeader ( ostream& os ) const;
 
-    bool   isInACharCodeRange( const long charcode ) const
-    {
-        if ( mCharCodeRanges.empty() ) {
-            return true;
-        }
-        for ( const auto& pair: mCharCodeRanges ) {
-            if ( pair.first <= charcode && charcode < pair.second ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void    setFaceHasGlyphNames() { mFaceHasGlyphNames = true; }
-    bool    faceHasGlyphNames() const { return mFaceHasGlyphNames; }
+    const std::vector< InputFont >& inputFonts() const { return mInputFonts; }
 
   private:
 
-    void                                 processJSON_input_fonts( const nlohmann::json& data );
-    void                                 processJSON_output     ( const nlohmann::json& data );
-    vector< pair< uint32_t, uint32_t > > processJSON_ranges     ( const nlohmann::json& data );
+    void processJSON_input_fonts( const nlohmann::json& data );
+    void processJSON_output     ( const nlohmann::json& data );
 
-    string mFontPath ;
-    string mOutputFileName ;
-    long   mOutputTextureSize ;
-    long   mGlyphBitmapSizeForSampling;
-    float  mGlyphScalingFromSamplingToPackedSignedDist ;
-    float  mRatioSpreadToGlyph;
-    bool   mProcessHiddenGlyphs;
-    long   mNumThreads;
-    vector< pair< uint32_t, uint32_t > >
-           mCharCodeRanges;
-    string mEncoding;
-    bool   mEnableDeadReckoning;
-    bool   mReverseYDirectionForGlyphs;
-    bool   mFaceHasGlyphNames;
+    std::vector< InputFont > mInputFonts;
+    string                   mOutputFileName ;
+    long                     mOutputTextureSize ;
+    long                     mGlyphBitmapSizeForSampling;
+    float                    mGlyphScalingFromSamplingToPackedSignedDist ;
+    float                    mRatioSpreadToGlyph;
+    bool                     mProcessHiddenGlyphs;
+    long                     mNumThreads;
+    string                   mEncoding;
+    bool                     mEnableDeadReckoning;
+    bool                     mReverseYDirectionForGlyphs;
 
-    static const string DefaultFontPath ;
     static const string DefaultExtraGlyphPath ;
     static const string DefaultOutputFileName ;
     static const long   DefaultOutputTextureSize ;
@@ -136,7 +149,6 @@ class GeneratorConfig {
     static const string DefaultEncoding;
     static const bool   DefaultEnableDeadReckoning;
     static const bool   DefaultReverseYDirectionForGlyphs;
-    static const bool   DefaultFaceHasGlyphNames;
 
     static const string JSON_KEY_INPUT_FONTS;
     static const string JSON_KEY_OUTPUT;

@@ -7,7 +7,6 @@
 
 #include "sdfont/generator/generator.hpp"
 #include "sdfont/generator/png_loader.hpp"
-#include "sdfont/free_type_utilities.hpp"
 
 namespace SDFont {
 
@@ -43,11 +42,6 @@ Generator::~Generator()
 {
     releaseTexture();
 
-    for ( auto* g : mGlyphs ) {
-
-        delete g;
-    }
-
     if ( mThreadDriver != nullptr ) {
 
         delete mThreadDriver;
@@ -81,14 +75,17 @@ bool Generator::generate()
         return false;
     }
 
-    auto ftError = FT_Done_Face( mFtFace );
+    for ( auto& inputFont : mInputFonts ) {
 
-    if ( ftError != FT_Err_Ok ) {
+        auto ftError = FT_Done_Face( inputFont.mFtFace );
 
-        cerr << "FT_DONE_Face error: " << ftError << "\n";
+        if ( ftError != FT_Err_Ok ) {
+
+            cerr << "FT_DONE_Face error: " << ftError << "\n";
+        }
     }
 
-    ftError = FT_Done_FreeType( mFtHandle );
+    auto ftError = FT_Done_FreeType( mFtHandle );
 
     if ( ftError != FT_Err_Ok ) {
 
@@ -99,59 +96,59 @@ bool Generator::generate()
 }
 
 
-FT_Error Generator::setEncoding ( const string& s )
+FT_Error Generator::setEncoding ( const string& s, InputFont& inputFont )
 {
     if ( s.compare(Encoding_unicode) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_UNICODE );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_UNICODE );
     }
     else if (s.compare(Encoding_ms_symbol) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_MS_SYMBOL );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_MS_SYMBOL );
     }
     else if (s.compare(Encoding_sjis) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_SJIS );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_SJIS );
     }
     else if (s.compare(Encoding_prc) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_PRC );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_PRC );
     }
     else if (s.compare(Encoding_big5) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_BIG5 );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_BIG5 );
     }
     else if (s.compare(Encoding_wansung) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_WANSUNG );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_WANSUNG );
     }
     else if (s.compare(Encoding_johab) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_JOHAB );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_JOHAB );
     }
     else if (s.compare(Encoding_adobe_latin_1) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_ADOBE_LATIN_1 );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_ADOBE_LATIN_1 );
     }
     else if (s.compare(Encoding_adobe_standard) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_ADOBE_STANDARD );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_ADOBE_STANDARD );
     }
     else if (s.compare(Encoding_adobe_expert) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_ADOBE_EXPERT );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_ADOBE_EXPERT );
     }
     else if (s.compare(Encoding_adobe_custom) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_ADOBE_CUSTOM );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_ADOBE_CUSTOM );
     }
     else if (s.compare(Encoding_apple_roman) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_ADOBE_CUSTOM );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_ADOBE_CUSTOM );
     }
     else if (s.compare(Encoding_old_latin_2) == 0 ) {
 
-        return FT_Select_Charmap( mFtFace, FT_ENCODING_OLD_LATIN_2 );
+        return FT_Select_Charmap( inputFont.mFtFace, FT_ENCODING_OLD_LATIN_2 );
     }
     else {
         return FT_Err_Bad_Argument;
@@ -168,135 +165,147 @@ bool Generator::initializeFreeType()
         return false;
     }
 
-    ftError = FT_New_Face(
+    for ( const auto& inputFontConf : mConf.inputFonts() ) {
+
+        InputFont inputFont;
+
+        cerr << "Font Name: " << inputFontConf.mFontName << "\n";
+
+        inputFont.mFontName = inputFontConf.mFontName;
+        inputFont.mFontPath = inputFontConf.mFontPath;
+        inputFont.mCharCodeRanges = inputFontConf.mCharCodeRanges;
+
+        ftError = FT_New_Face(
                   mFtHandle,
-                  mConf.fontPath().c_str(),
+                  inputFontConf.fontPath().c_str(),
                   0,
-                  &mFtFace 
+                  &inputFont.mFtFace 
               );
 
-    if ( ftError != FT_Err_Ok ) {
+        if ( ftError != FT_Err_Ok ) {
 
-        cerr << "Free Type error: " << ftError << "\n";
-        return false;
-    }
+            cerr << "Free Type error: " << ftError << "\n";
+            return false;
+        }
 
-    cerr << "Number of glyphs: " << mFtFace->num_glyphs << "\n";
+        cerr << "Number of glyphs: " << inputFont.mFtFace->num_glyphs << "\n";
 
-    FT_UShort flags = FT_Get_FSType_Flags( mFtFace );
-    cerr << "Font Policy (FSType): [ ";
-    if ( ( flags & FT_FSTYPE_INSTALLABLE_EMBEDDING ) != 0 ) {
-        cerr << "This font may be embedded and permanently installed on the remote system by an application.";
-    }
-    if ( ( flags & FT_FSTYPE_RESTRICTED_LICENSE_EMBEDDING ) != 0 ) {
-        cerr << "This font must not be modified, embedded or exchanged in any manner.";
-    }
-    if ( ( flags & FT_FSTYPE_PREVIEW_AND_PRINT_EMBEDDING ) != 0 ) {
-        cerr << "This font may be embedded and temporarily loaded on the remote system. Documents containing Preview & Print fonts must be opened ‘read-only’";
-    }
-    if ( ( flags & FT_FSTYPE_EDITABLE_EMBEDDING ) != 0 ) {
-        cerr << "This font may be opened for reading, editing is permitted, and changes may be saved.";
-    }
-    if ( ( flags & FT_FSTYPE_NO_SUBSETTING ) != 0 ) {
-        cerr << "The font may not be subsetted prior to embedding.";
-    }
-    if ( ( flags & FT_FSTYPE_BITMAP_EMBEDDING_ONLY ) != 0 ) {
-        cerr << "Only bitmaps contained in the font may be embedded; no outline data may be embedded.";
-    }
-    cerr << " ]\n";
+        FT_UShort flags = FT_Get_FSType_Flags( inputFont.mFtFace );
+        cerr << "Font Policy (FSType): [ ";
+        if ( ( flags & FT_FSTYPE_INSTALLABLE_EMBEDDING ) != 0 ) {
+            cerr << "This font may be embedded and permanently installed on the remote system by an application.";
+        }
+        if ( ( flags & FT_FSTYPE_RESTRICTED_LICENSE_EMBEDDING ) != 0 ) {
+            cerr << "This font must not be modified, embedded or exchanged in any manner.";
+        }
+        if ( ( flags & FT_FSTYPE_PREVIEW_AND_PRINT_EMBEDDING ) != 0 ) {
+            cerr << "This font may be embedded and temporarily loaded on the remote system. Documents containing Preview & Print fonts must be opened ‘read-only’";
+        }
+        if ( ( flags & FT_FSTYPE_EDITABLE_EMBEDDING ) != 0 ) {
+            cerr << "This font may be opened for reading, editing is permitted, and changes may be saved.";
+        }
+        if ( ( flags & FT_FSTYPE_NO_SUBSETTING ) != 0 ) {
+            cerr << "The font may not be subsetted prior to embedding.";
+        }
+        if ( ( flags & FT_FSTYPE_BITMAP_EMBEDDING_ONLY ) != 0 ) {
+            cerr << "Only bitmaps contained in the font may be embedded; no outline data may be embedded.";
+        }
+        cerr << " ]\n";
 
-    ftError = setEncoding ( mConf.encoding() );
+        ftError = setEncoding ( mConf.encoding(), inputFont );
 
-    if ( ftError != FT_Err_Ok ) {
+        if ( ftError != FT_Err_Ok ) {
 
-        cerr << "FreeType error: " << ftError << "\n";
-        return false;
-    }
+            cerr << "FreeType error: " << ftError << "\n";
+            return false;
+        }
 
-    ftError = FT_Set_Pixel_Sizes ( mFtFace, 0, mConf.glyphBitmapSizeForSampling() );
+        ftError = FT_Set_Pixel_Sizes ( inputFont.mFtFace, 0, mConf.glyphBitmapSizeForSampling() );
 
-    if ( ftError != FT_Err_Ok ) {
+        if ( ftError != FT_Err_Ok ) {
 
-        cerr << "FreeType error: " << ftError << "\n";
-        return false;
-    }
+            cerr << "FreeType error: " << ftError << "\n";
+            return false;
+        }
 
-    if ( FT_HAS_GLYPH_NAMES( mFtFace ) ) {
-        mConf.setFaceHasGlyphNames();
-        cerr << "The face has glyph names.\n";
-    }
-    else {
-        cerr << "The face does not have glyph names.\n";
-    }
+        if ( FT_HAS_GLYPH_NAMES( inputFont.mFtFace ) ) {
 
-    cerr << "Num charmaps: " << mFtFace->num_charmaps << "\n";
-
-    int active_charmap_index = -1;
-    if ( mFtFace->charmap != nullptr ) {
-
-        active_charmap_index = FT_Get_Charmap_Index( mFtFace->charmap );
-    }
-
-    for ( int i = 0; i < mFtFace->num_charmaps; i++ ) {
-
-        cerr << "index: " << i;
-        if ( i == active_charmap_index ) {
-
-            cerr << " [ACTIVE] ";
+            inputFont.mFaceHasGlyphNames = true;
+            cerr << "The face has glyph names.\n";
         }
         else {
-            cerr << "          ";
+            inputFont.mFaceHasGlyphNames = false;
+            cerr << "The face does not have glyph names.\n";
         }
 
-        cerr << "encoding: " << FTUtilStringEncoding( mFtFace->charmaps[i]->encoding ) << "\t";
-        cerr << "platform_id: " << mFtFace->charmaps[i]->platform_id << "\t";
-        cerr << "encoding_id: " << mFtFace->charmaps[i]->encoding_id << "\t";
-        cerr << "\n";
-    }
+        cerr << "Num charmaps: " << inputFont.mFtFace->num_charmaps << "\n";
 
-    for ( int i = 0; i < mFtFace->num_charmaps; i++ ) {
+        int active_charmap_index = -1;
+        if ( inputFont.mFtFace->charmap != nullptr ) {
 
-        const auto charMap = generateCharMap( mFtFace, mFtFace->charmaps[i], i == active_charmap_index );
-        mCharMaps.push_back( charMap );
-    }
+            active_charmap_index = FT_Get_Charmap_Index( inputFont.mFtFace->charmap );
+        }
 
-    if ( ! mConf.processHiddenGlyphs() ) {
+        for ( int i = 0; i < inputFont.mFtFace->num_charmaps; i++ ) {
 
-        for ( const auto& charMap : mCharMaps ) {
+            cerr << "index: " << i;
+            if ( i == active_charmap_index ) {
 
-            for ( const auto& pe : charMap.m_char_to_codepoint ) {
+                cerr << " [ACTIVE] ";
+            }
+            else {
+                cerr << "          ";
+            }
 
-                mCodepointsToProcess.insert( pe.second );
+            cerr << "encoding: " << FTUtilStringEncoding( inputFont.mFtFace->charmaps[i]->encoding ) << "\t";
+            cerr << "platform_id: " << inputFont.mFtFace->charmaps[i]->platform_id << "\t";
+            cerr << "encoding_id: " << inputFont.mFtFace->charmaps[i]->encoding_id << "\t";
+            cerr << "\n";
+        }
+
+        inputFont.generateCharMaps( active_charmap_index );
+
+        if ( ! mConf.processHiddenGlyphs() ) {
+
+            for ( const auto& charMap : inputFont.mCharMaps ) {
+
+                for ( const auto& pe : charMap.m_char_to_codepoint ) {
+
+                    inputFont.mCodepointsToProcess.insert( pe.second );
+                }
             }
         }
-    }
 
+        mInputFonts.push_back( inputFont );
+    }
     return true;
 }
 
-
 void Generator::getKernings()
 {
-    if ( FT_HAS_KERNING( mFtFace ) ) {;
+    for ( auto& inputFont : mInputFonts ) {
 
-        for ( auto* g1 : mGlyphs ) {
+        if ( FT_HAS_KERNING( inputFont.mFtFace ) ) {;
 
-            if ( g1->hasExternalBitmap() ) {
-                continue;
-            }
+            for ( auto* g1 : inputFont.mGlyphs ) {
 
-            for ( auto* g2 : mGlyphs ) {
-
-                if ( g2->hasExternalBitmap() ) {
+                if ( g1->hasExternalBitmap() ) {
                     continue;
                 }
 
-                FT_Vector kerning;
-                FT_Get_Kerning( mFtFace, g1->codePoint(), g2->codePoint(), FT_KERNING_DEFAULT, &kerning);
+                for ( auto* g2 : inputFont.mGlyphs ) {
 
-                if ( kerning.x != 0 ) {
+                    if ( g2->hasExternalBitmap() ) {
+                        continue;
+                    }
 
-                    g1->addKerning( g2->codePoint(), kerning.x );
+                    FT_Vector kerning;
+                    FT_Get_Kerning( inputFont.mFtFace, g1->codePoint(), g2->codePoint(), FT_KERNING_DEFAULT, &kerning);
+
+                    if ( kerning.x != 0 ) {
+
+                        g1->addKerning( g2->codePoint(), kerning.x );
+                    }
                 }
             }
         }
@@ -308,7 +317,15 @@ long Generator::fitGlyphsToTexture()
 {
     long maxNumGlyphsPerEdge = 0;
     long bestHeight = 0;
-    const auto bestWidth = findBestWidthForDefaultFontSize( bestHeight, maxNumGlyphsPerEdge );
+
+    vector< InternalGlyphForGen* > allGlyphs;
+
+    for ( auto& inputFont : mInputFonts ) {
+
+        allGlyphs.insert( allGlyphs.end(), inputFont.mGlyphs.begin(), inputFont.mGlyphs.end() );
+    }
+
+    const auto bestWidth = findBestWidthForDefaultFontSize( allGlyphs, bestHeight, maxNumGlyphsPerEdge );
 
     if ( mVerbose ) {
 
@@ -331,7 +348,7 @@ long Generator::fitGlyphsToTexture()
     return bestWidth;
 }
 
-long Generator::findHeightFromWidth( const long width, long& maxNumGlyphsPerEdge )
+long Generator::findHeightFromWidth( const vector< InternalGlyphForGen* >& allGlyphs, const long width, long& maxNumGlyphsPerEdge )
 {
     long leftX  = 0;
     long height = 0;
@@ -341,9 +358,9 @@ long Generator::findHeightFromWidth( const long width, long& maxNumGlyphsPerEdge
     long numGlyphsPerRow = 0;
     long numGlyphsPerColumn = 1;
 
-    for ( auto i = 0; i < mGlyphs.size(); i++ ) {
+    for ( auto i = 0; i < allGlyphs.size(); i++ ) {
 
-        auto* g = mGlyphs[ i ];
+        auto* g = allGlyphs[ i ];
 
         if ( leftX + g->signedDistWidth() > width ) {
 
@@ -375,11 +392,11 @@ long Generator::findHeightFromWidth( const long width, long& maxNumGlyphsPerEdge
 }
 
 
-long Generator::findBestWidthForDefaultFontSize( long& bestHeight, long& maxNumGlyphsPerEdge )
+long Generator::findBestWidthForDefaultFontSize( const vector< InternalGlyphForGen* >& allGlyphs, long& bestHeight, long& maxNumGlyphsPerEdge )
 {
-    const auto initialWidth = (long) sqrt ( mGlyphs.size() ) * mConf.glyphBitmapSizeForSampling();
+    const auto initialWidth = (long) sqrt ( allGlyphs.size() ) * mConf.glyphBitmapSizeForSampling();
 
-    const auto initialHeight = findHeightFromWidth( initialWidth, maxNumGlyphsPerEdge );
+    const auto initialHeight = findHeightFromWidth( allGlyphs, initialWidth, maxNumGlyphsPerEdge );
 
     auto previousWidth { initialWidth  };
     auto previousHeight{ initialHeight };
@@ -389,7 +406,7 @@ long Generator::findBestWidthForDefaultFontSize( long& bestHeight, long& maxNumG
 
         for ( auto width = initialWidth - 1; width >= initialHeight; width-- ) {
 
-            const auto height = findHeightFromWidth( width, maxNumGlyphsPerEdge );
+            const auto height = findHeightFromWidth( allGlyphs, width, maxNumGlyphsPerEdge );
 
             if ( width == height ) {
 
@@ -419,7 +436,7 @@ long Generator::findBestWidthForDefaultFontSize( long& bestHeight, long& maxNumG
     else {
         for ( auto width = initialWidth + 1; width <= initialHeight; width++ ) {
 
-            const auto height = findHeightFromWidth( width, maxNumGlyphsPerEdge );
+            const auto height = findHeightFromWidth( allGlyphs, width, maxNumGlyphsPerEdge );
 
             if ( width == height ) {
 
@@ -457,120 +474,72 @@ bool Generator::generateGlyphs()
 
     if ( mConf.processHiddenGlyphs() ) {
 
-        for ( FT_ULong i = 0; i <= mFtFace->num_glyphs; i++ ) {
+        for ( auto& inputFont : mInputFonts ) {
 
-            auto ftError = FT_Load_Glyph ( mFtFace, i, FT_LOAD_DEFAULT );
-
-            if ( ftError != FT_Err_Ok ) {
-
-                // no glyph present for the codepoint
-                continue;
-            }
-
-            if ( mConf.faceHasGlyphNames() ) {
-
-                ftError = FT_Get_Glyph_Name( mFtFace, i, glyph_name_buffer, 256 );
+            for ( FT_ULong i = 0; i <= inputFont.mFtFace->num_glyphs; i++ ) {
+         
+                auto ftError = FT_Load_Glyph ( inputFont.mFtFace, i, FT_LOAD_DEFAULT );
 
                 if ( ftError != FT_Err_Ok ) {
 
-                    cerr << "FreeType error: " << ftError << "\n";
-                    return false;
+                    // no glyph present for the codepoint
+                    continue;
                 }
 
-                glyph_name_buffer[255] = 0;
-                glyph_name = glyph_name_buffer;
-            }
+                if ( inputFont.mFaceHasGlyphNames ) {
 
-            auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, mFtFace->glyph->metrics, glyph_name );
-            mGlyphs.push_back ( g );
+                    ftError = FT_Get_Glyph_Name( inputFont.mFtFace, i, glyph_name_buffer, 256 );
+
+                    if ( ftError != FT_Err_Ok ) {
+
+                        cerr << "FreeType error: " << ftError << "\n";
+                        return false;
+                    }
+
+                    glyph_name_buffer[255] = 0;
+                    glyph_name = glyph_name_buffer;
+                }
+
+                auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, inputFont.mFtFace->glyph->metrics, glyph_name );
+                inputFont.mGlyphs.push_back ( g );
+            }
         }
     }
     else {
-        for ( const FT_ULong i : mCodepointsToProcess ) {
+        for ( auto& inputFont : mInputFonts ) {
 
-            auto ftError = FT_Load_Glyph ( mFtFace, i, FT_LOAD_DEFAULT );
+            for ( const FT_ULong i : inputFont.mCodepointsToProcess ) {
 
-            if ( ftError != FT_Err_Ok ) {
-
-                // no glyph present for the codepoint
-                continue;
-            }
-
-            if ( mConf.faceHasGlyphNames() ) {
-
-                ftError = FT_Get_Glyph_Name( mFtFace, i, glyph_name_buffer, 256 );
+                auto ftError = FT_Load_Glyph ( inputFont.mFtFace, i, FT_LOAD_DEFAULT );
 
                 if ( ftError != FT_Err_Ok ) {
 
-                    cerr << "FreeType error: " << ftError << "\n";
-                    return false;
+                    // no glyph present for the codepoint
+                    continue;
                 }
 
-                glyph_name_buffer[255] = 0;
-                glyph_name = glyph_name_buffer;
-            }
+                if ( inputFont.mFaceHasGlyphNames ) {
 
-            auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, mFtFace->glyph->metrics, glyph_name );
-            mGlyphs.push_back ( g );
+                    ftError = FT_Get_Glyph_Name( inputFont.mFtFace, i, glyph_name_buffer, 256 );
+
+                    if ( ftError != FT_Err_Ok ) {
+
+                        cerr << "FreeType error: " << ftError << "\n";
+                        return false;
+                    }
+
+                    glyph_name_buffer[255] = 0;
+                    glyph_name = glyph_name_buffer;
+                }
+
+                auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, inputFont.mFtFace->glyph->metrics, glyph_name );
+                inputFont.mGlyphs.push_back ( g );
+            }
         }
     }
 
     return true;
 }
-
-CharMap Generator::generateCharMap(
-    FT_Face        ftFace,
-    FT_CharMapRec* ftCharMap,
-    const bool     isDefault
-) {
-    CharMap charMap(
-        isDefault,
-        FTUtilStringEncoding( ftCharMap->encoding ),
-        ftCharMap->platform_id,
-        ftCharMap->encoding_id
-    );
-
-    auto ftError = FT_Set_Charmap( ftFace, ftCharMap );
-
-    if ( ftError != FT_Err_Ok ) {
-
-        cerr << "FreeType error: FT_Set_Charmap" << ftError << "\n";
-
-        return charMap;
-    }
-
-    FT_UInt gindex = 0;
-
-    FT_ULong charcode = FT_Get_First_Char( ftFace, &gindex );
-
-    while ( gindex != 0 ) {
-
-        if ( mConf.isInACharCodeRange( charcode ) ) {
-
-            charMap.m_char_to_codepoint.insert( pair( charcode, gindex ) );
-        }
-
-        charcode = FT_Get_Next_Char( ftFace, charcode, &gindex );
-    }
-    return charMap;
-}
-
-
-std::pair<float, float> Generator::findMeanGlyphDimension()
-{
-    float width { 0.0f };
-    float height{ 0.0f };
-    float count { 0.0f };
-    for ( auto* g : mGlyphs ) {
-        if ( g->width() > 0.0f &&  g->height() > 0.0f ) {
-            width  += g->width();
-            height += g->height();
-            count  += 1.0f;
-        }
-    }
-    return std::pair( width / count, height / count );
-}
-
 
 bool Generator::generateGlyphBitmaps( long bestWidthForDefaultFontSize )
 {
@@ -578,64 +547,65 @@ bool Generator::generateGlyphBitmaps( long bestWidthForDefaultFontSize )
     long baseY    = 0;
     long maxY     = 0;
 
-    long numGlyphsProcessed = 1;
+    for ( auto& inputFont : mInputFonts ) {
 
-    for ( auto* g : mGlyphs ) {
+        long numGlyphsProcessed = 1;
 
-        if ( g->hasExternalBitmap() ) {
+        for ( auto* g : inputFont.mGlyphs ) {
 
-            g->setSignedDist();
-        }
-        else {
-            auto ftError = FT_Load_Glyph( mFtFace, g->codePoint(), FT_LOAD_DEFAULT );
+            if ( g->hasExternalBitmap() ) {
 
-            if (ftError != FT_Err_Ok) {
+                g->setSignedDist();
+            }
+            else {
+                auto ftError = FT_Load_Glyph( inputFont.mFtFace, g->codePoint(), FT_LOAD_DEFAULT );
 
-                cerr << "FreeType error: " << ftError << "\n";
-                return false;
+                if (ftError != FT_Err_Ok) {
+
+                    cerr << "FreeType error: " << ftError << "\n";
+                    return false;
+                }
+
+                ftError = FT_Render_Glyph( inputFont.mFtFace->glyph, FT_RENDER_MODE_MONO );
+
+                if (ftError != FT_Err_Ok) {
+
+                    cerr << "FreeType error: " << ftError << "\n";
+                    return false;
+                }
+
+                auto& bm = inputFont.mFtFace->glyph->bitmap;
+                g->setSignedDist( bm );
             }
 
-            ftError = FT_Render_Glyph( mFtFace->glyph, FT_RENDER_MODE_MONO );
+            if ( baseX + g->signedDistWidth() > mConf.outputTextureSize() ) {
 
-            if (ftError != FT_Err_Ok) {
-
-                cerr << "FreeType error: " << ftError << "\n";
-                return false;
+                baseX = 0;
+                baseY += maxY;
+                maxY = 0;
             }
 
-            auto& bm = mFtFace->glyph->bitmap;
-            g->setSignedDist( bm );
+            g->setBaseXY(baseX, baseY);
+            baseX += g->signedDistWidth();
+            maxY = std::max( maxY, g->signedDistHeight() );
+
+            if ( mVerbose ) {
+
+                g->visualize(cerr);
+                cerr << "Font: [" << inputFont.mFontName << "] Num Glyphs Processed: " << numGlyphsProcessed << "/" << inputFont.mGlyphs.size() << "\n";
+                cerr << "Base:[" << baseX << " , " << baseY << "]\n";
+                cerr << "\n";
+            }
+
+            numGlyphsProcessed++;
         }
-
-        if ( baseX + g->signedDistWidth() > mConf.outputTextureSize() ) {
-
-            baseX = 0;
-            baseY += maxY;
-            maxY = 0;
-        }
-
-        g->setBaseXY(baseX, baseY);
-        baseX += g->signedDistWidth();
-        maxY = std::max( maxY, g->signedDistHeight() );
-
-        if ( mVerbose ) {
-
-            g->visualize(cerr);
-            cerr << "Num Glyphs Processed: " << numGlyphsProcessed << "/" << mGlyphs.size() << "\n";
-            cerr << "Base:[" << baseX << " , " << baseY << "]\n";
-            cerr << "\n";
-        }
-
-        numGlyphsProcessed++;
     }
-
     return true;
 }
 
 
 bool Generator::generateTexture( bool reverseY )
 {
-
     auto len = mConf.outputTextureSize();
 
     mPtrMain = (unsigned char*) malloc (sizeof(unsigned char) * 4 * len * len);
@@ -649,7 +619,6 @@ bool Generator::generateTexture( bool reverseY )
     memset ( mPtrMain, (int)0, sizeof(unsigned char) * 4 * len * len );
 
     mPtrArray = (unsigned char**) malloc ( sizeof(unsigned char*) * len ) ;
-               
 
     if ( mPtrArray == nullptr ) {
 
@@ -663,35 +632,37 @@ bool Generator::generateTexture( bool reverseY )
         mPtrArray[i] = &( mPtrMain[ sizeof(unsigned char) * len * i ] );
     }
 
-    for ( auto* g : mGlyphs ) {
+    for ( auto& inputFont : mInputFonts ) {
 
-        for ( auto srcY = 0; srcY < g->signedDistHeight(); srcY++ ) {
+        for ( auto* g : inputFont.mGlyphs ) {
 
-            auto dstY    = len - 1 - ( srcY + g->baseY() );
+            for ( auto srcY = 0; srcY < g->signedDistHeight(); srcY++ ) {
 
-            if ( dstY < 0 || len <= dstY ) {
-                continue;
-            }
-            auto* curRow = mPtrArray [dstY];
+                auto dstY    = len - 1 - ( srcY + g->baseY() );
 
-            for ( auto srcX = 0; srcX < g->signedDistWidth(); srcX++ ) {
-
-                auto dstX  = ( srcX + g->baseX() );
-                if ( dstX < 0 || len <= dstX ) {
+                if ( dstY < 0 || len <= dstY ) {
                     continue;
                 }
+                auto* curRow = mPtrArray [dstY];
 
-                auto dist  = g->signedDist(
-                    srcX, 
-                    reverseY ? srcY : (g->signedDistHeight() - 1 - srcY)
-                );
+                for ( auto srcX = 0; srcX < g->signedDistWidth(); srcX++ ) {
 
-                auto alpha = min ( 255, max( 0, (int)( dist * 255.0 ) ) );
-                curRow [ dstX ] = (unsigned char)alpha;
+                    auto dstX  = ( srcX + g->baseX() );
+                    if ( dstX < 0 || len <= dstX ) {
+                        continue;
+                    }
+
+                    auto dist  = g->signedDist(
+                        srcX, 
+                        reverseY ? srcY : (g->signedDistHeight() - 1 - srcY)
+                    );
+
+                    auto alpha = min ( 255, max( 0, (int)( dist * 255.0 ) ) );
+                    curRow [ dstX ] = (unsigned char)alpha;
+                }
             }
         }
     }
-
     return true;
 }
 
@@ -838,43 +809,63 @@ bool Generator::emitFileMetrics()
         return false;
     }
 
-    mConf.outputMetricsHeader( osMetrics );
-
     osMetrics << "SPREAD IN TEXTURE\n";
     osMetrics << (float)mConf.signedDistExtent() / (float) mConf.outputTextureSize();
     osMetrics << "\n";
     osMetrics << "SPREAD IN FONT METRICS\n";
     osMetrics << (float)mConf.signedDistExtent() / mConf.glyphScalingFromSamplingToPackedSignedDist() / (float) mConf.glyphBitmapSizeForSampling();
     osMetrics << "\n";
-    osMetrics << "GLYPHS\n";
 
-    for ( auto* g : mGlyphs ) {
+    for ( auto& inputFont : mInputFonts ) {
 
-        g->emitMetrics( osMetrics );
+        osMetrics << "FONT BEGIN\n";
+        osMetrics << inputFont.mFontName;
         osMetrics << "\n";
 
+        osMetrics << "# Source Font Path: ";
+        osMetrics << inputFont.mFontPath;
+        osMetrics << "\n";
+
+        osMetrics << "# Char Code Ranges:(low, high+1) [";
+
+        for ( const auto& pair : inputFont.mCharCodeRanges ) {
+            osMetrics << " (" << pair.first << "," << pair.second << ")";
+        }
+        osMetrics << "]\n";
+
+        osMetrics << "\n";
+
+        mConf.outputMetricsHeader( osMetrics );
+
+        osMetrics << "GLYPHS\n";
+
+        for ( auto* g : inputFont.mGlyphs ) {
+
+            g->emitMetrics( osMetrics );
+            osMetrics << "\n";
+        }
+
+        osMetrics << "#Kernings\tPred Code Point\tSucc Code Point 1"
+                     "\tKerning1\tSucc Code Point 2\tKerning 2...\n";
+
+        osMetrics << "KERNINGS\n";
+
+        for ( auto* g : inputFont.mGlyphs ) {
+
+            g->emitKernings( osMetrics );
+        }
+
+        osMetrics << "#Char Maps\tEncoding\tPlatform ID\tEncoding ID\tDefault?\tNum Chars\t";
+        osMetrics << "#Char Code 1\tGlyph Code Point 1\tChar Code 2\tGlyph Code Point 2...\n";
+        osMetrics << "CHAR MAPS\n";
+
+        for ( auto& char_map : inputFont.mCharMaps ) {
+
+            char_map.emit( osMetrics );
+        }
+
+        osMetrics << "FONT END\n\n";
     }
-
-    osMetrics << "#Kernings\tPred Code Point\tSucc Code Point 1"
-                 "\tKerning1\tSucc Code Point 2\tKerning 2...\n";
-
-    osMetrics << "KERNINGS\n";
-
-    for ( auto* g : mGlyphs ) {
-
-        g->emitKernings( osMetrics );
-
-    }
-
-    osMetrics << "#Char Maps\tEncoding\tPlatform ID\tEncoding ID\tDefault?\tNum Chars\t";
-    osMetrics << "#Char Code 1\tGlyph Code Point 1\tChar Code 2\tGlyph Code Point 2...\n";
-    osMetrics << "CHAR MAPS\n";
-
-    for ( auto& char_map : mCharMaps ) {
-
-        char_map.emit( osMetrics );
-    }
-
     osMetrics.close();
 
     if ( mVerbose ) {
@@ -886,20 +877,24 @@ bool Generator::emitFileMetrics()
     return true;
 }
 
-
-void Generator::generateMetrics(float& margin, vector<Glyph>& glyphs)
+void Generator::generateMetrics( const string& fontName, float& margin, vector<Glyph>& glyphs )
 {
 
     glyphs.clear();
+    margin = (float)mConf.signedDistExtent() / (float) mConf.outputTextureSize();
 
-    margin =  (float)mConf.signedDistExtent() / (float) mConf.outputTextureSize();
+    for ( auto& inputFont : mInputFonts ) {    
 
-    for ( auto* g : mGlyphs ) {
+        if ( inputFont.mFontName == fontName ) {
 
-        auto sdg = g->generateSDGlyph();
-        glyphs.push_back( std::move(sdg) );
+            for ( auto* g : inputFont.mGlyphs ) {
+
+                auto sdg = g->generateSDGlyph();
+                glyphs.push_back( std::move(sdg) );
+            }
+        }
+        return;
     }
-
 }
 
 } // namespace SDFont
