@@ -227,14 +227,14 @@ Usage: sdfont_generator -verbose -config_file /path/to/config/file.json -num_thr
         {
             "font name" : "ariel-0x0000-0x0100",
             "font path" : "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "ranges"    : [
+            "code point ranges" : [
                 "0X0000", "0X0100"
             ]
         },
         {
             "font name" : "times-new-roman-0x0000-0x0100",
             "font path" : "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
-            "ranges"    : [
+            "code point ranges" : [
                 "0X0000", "0X0100"
             ]
         }
@@ -259,7 +259,9 @@ Usage: sdfont_generator -verbose -config_file /path/to/config/file.json -num_thr
 
 * "font_path" : Path to the TrueType font including the extention. The fonts are usually found in `/usr/share/fonts`, `/usr/local/fonts` etc. on Linux, and `/System/Library/Fonts/` on MacOS.
 
-* "ranges" : An array of even number of code points in the '0X'-hexadecimal notation: If this array element is present, each consecutive pair (begin, end past one) represents a range of code points for the glyph generation. It can be used to reduce the output file sizes, by omitting the generation of the signed distance fields for unspecified glyphs.
+* "code point ranges" : An array of even number of code points in the '0X'-hexadecimal notation: If this array element is present, each consecutive pair (begin, end past one) represents a range of code points for the glyph generation. It can be used to reduce the output file sizes, by omitting the generation of the signed distance fields for unspecified glyphs. The code points are assumed to be in Unicode.
+
+* "glyph index ranges" : An array of even number of glyph indices in the '0X'-hexadecimal notation: If this array element is present, each consecutive pair (begin, end past one) represents a range of glyph indices for the glyph generation. The glyphs are arranged according to the indices in the font, and the indices depend on the font internals.
 
 * "output" : The section for the output specification.
 

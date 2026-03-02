@@ -40,17 +40,35 @@ class Generator {
 
         }
 
-        bool isInACharCodeRange( const long charcode ) const
+        bool isInACodePointRange( const long charcode ) const
         {
-            if ( mCharCodeRanges.empty() ) {
+            if ( mCodePointRanges.empty() ) {
                 return true;
             }
-            for ( const auto& pair: mCharCodeRanges ) {
+            for ( const auto& pair: mCodePointRanges ) {
                 if ( pair.first <= charcode && charcode < pair.second ) {
                     return true;
                 }
             }
             return false;
+        }
+
+        bool isInAGlyphIndexRange( const long index ) const
+        {
+            if ( mGlyphIndexRanges.empty() ) {
+                return true;
+            }
+            for ( const auto& pair: mGlyphIndexRanges ) {
+                if ( pair.first <= index && index < pair.second ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool hasGlyphIndexRange() const 
+        {
+            return !mGlyphIndexRanges.empty();
         }
 
         void generateCharMaps( int activeCharmapIndex )
@@ -83,7 +101,7 @@ class Generator {
 
                 while ( gindex != 0 ) {
 
-                    if ( isInACharCodeRange( charcode ) ) {
+                    if ( isInACodePointRange( charcode ) ) {
 
                         charMap.m_char_to_codepoint.insert( pair( charcode, gindex ) );
                     }
@@ -97,9 +115,10 @@ class Generator {
         FT_Face                              mFtFace;
         string                               mFontName;
         string                               mFontPath;
-        vector< pair< uint32_t, uint32_t > > mCharCodeRanges;
+        vector< pair< uint32_t, uint32_t > > mCodePointRanges;
+        vector< pair< uint32_t, uint32_t > > mGlyphIndexRanges;
         vector< CharMap >                    mCharMaps;
-        set< uint32_t >                      mCodepointsToProcess;
+        set< uint32_t >                      mGlyphIndicesToProcessFromCharMaps;
         bool                                 mFaceHasGlyphNames;
         vector< InternalGlyphForGen* >       mGlyphs;
     };

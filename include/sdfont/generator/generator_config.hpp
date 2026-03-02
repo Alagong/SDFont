@@ -29,7 +29,8 @@ class GeneratorConfig {
         InputFont():
            mFontName{ DefaultFontName },
            mFontPath{ DefaultFontPath },
-           mCharCodeRanges{}
+           mCodePointRanges{},
+           mGlyphIndexRanges{}
         {
         }
 
@@ -43,9 +44,14 @@ class GeneratorConfig {
             mFontPath = s;
         }
 
-        void addCharCodeRange( const uint32_t s, const uint32_t f )
+        void addCodePointRange( const uint32_t s, const uint32_t f )
         {
-            mCharCodeRanges.push_back( std::pair( s, f ) );
+            mCodePointRanges.push_back( std::pair( s, f ) );
+        }
+
+        void addGlyphIndexRange( const uint32_t s, const uint32_t f )
+        {
+            mGlyphIndexRanges.push_back( std::pair( s, f ) );
         }
 
         string fontPath() const
@@ -57,7 +63,8 @@ class GeneratorConfig {
 
         string                               mFontName;
         string                               mFontPath;
-        vector< pair< uint32_t, uint32_t > > mCharCodeRanges;
+        vector< pair< uint32_t, uint32_t > > mCodePointRanges;
+        vector< pair< uint32_t, uint32_t > > mGlyphIndexRanges;
     };
 
     GeneratorConfig():
@@ -161,7 +168,8 @@ class GeneratorConfig {
     static const string JSON_KEY_FONT_NAME;
     static const string JSON_KEY_FONT_PATH;
     static const string JSON_KEY_ENCODING;
-    static const string JSON_KEY_RANGES;
+    static const string JSON_KEY_CODE_POINT_RANGES;
+    static const string JSON_KEY_GLYPH_INDEX_RANGES;
 
     void trim( string& line ) const;
     bool isCommentLine( const std::string& line ) const;

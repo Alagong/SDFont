@@ -171,9 +171,10 @@ bool Generator::initializeFreeType()
 
         cerr << "Font Name: " << inputFontConf.mFontName << "\n";
 
-        inputFont.mFontName = inputFontConf.mFontName;
-        inputFont.mFontPath = inputFontConf.mFontPath;
-        inputFont.mCharCodeRanges = inputFontConf.mCharCodeRanges;
+        inputFont.mFontName         = inputFontConf.mFontName;
+        inputFont.mFontPath         = inputFontConf.mFontPath;
+        inputFont.mCodePointRanges  = inputFontConf.mCodePointRanges;
+        inputFont.mGlyphIndexRanges = inputFontConf.mGlyphIndexRanges;
 
         ftError = FT_New_Face(
                   mFtHandle,
@@ -265,13 +266,16 @@ bool Generator::initializeFreeType()
 
         inputFont.generateCharMaps( active_charmap_index );
 
-        if ( ! mConf.processHiddenGlyphs() ) {
+        if ( ! mConf.processHiddenGlyphs() && !inputFont.hasGlyphIndexRange() ) {
 
             for ( const auto& charMap : inputFont.mCharMaps ) {
 
                 for ( const auto& pe : charMap.m_char_to_codepoint ) {
 
-                    inputFont.mCodepointsToProcess.insert( pe.second );
+                    if ( inputFont.isInACodePointRange( pe.first ) ) {
+
+                        inputFont.mGlyphIndicesToProcessFromCharMaps.insert( pe.second );
+                    }
                 }
             }
         }
@@ -472,69 +476,51 @@ bool Generator::generateGlyphs()
     char glyph_name_buffer[256];
     string glyph_name( "" );
 
-    if ( mConf.processHiddenGlyphs() ) {
+    for ( auto& inputFont : mInputFonts ) {
 
-        for ( auto& inputFont : mInputFonts ) {
+        for ( FT_ULong glyph_index = 0; glyph_index <= inputFont.mFtFace->num_glyphs; glyph_index++ ) {
 
-            for ( FT_ULong i = 0; i <= inputFont.mFtFace->num_glyphs; i++ ) {
-         
-                auto ftError = FT_Load_Glyph ( inputFont.mFtFace, i, FT_LOAD_DEFAULT );
+            if ( inputFont.hasGlyphIndexRange() ) {
+
+                if ( !inputFont.isInAGlyphIndexRange( glyph_index ) ) {
+
+                    continue;
+                }
+            }
+            else if ( !mConf.processHiddenGlyphs() ) {
+
+                const auto it = inputFont.mGlyphIndicesToProcessFromCharMaps.find( glyph_index );
+
+                if ( it == inputFont.mGlyphIndicesToProcessFromCharMaps.end() ) {
+
+                    continue;
+                }
+            }
+
+            auto ftError = FT_Load_Glyph ( inputFont.mFtFace, glyph_index, FT_LOAD_DEFAULT );
+
+            if ( ftError != FT_Err_Ok ) {
+
+                // no glyph present for the codepoint
+                continue;
+            }
+
+            if ( inputFont.mFaceHasGlyphNames ) {
+
+                ftError = FT_Get_Glyph_Name( inputFont.mFtFace, glyph_index, glyph_name_buffer, 256 );
 
                 if ( ftError != FT_Err_Ok ) {
 
-                    // no glyph present for the codepoint
-                    continue;
+                    cerr << "FreeType error: " << ftError << "\n";
+                    return false;
                 }
 
-                if ( inputFont.mFaceHasGlyphNames ) {
-
-                    ftError = FT_Get_Glyph_Name( inputFont.mFtFace, i, glyph_name_buffer, 256 );
-
-                    if ( ftError != FT_Err_Ok ) {
-
-                        cerr << "FreeType error: " << ftError << "\n";
-                        return false;
-                    }
-
-                    glyph_name_buffer[255] = 0;
-                    glyph_name = glyph_name_buffer;
-                }
-
-                auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, inputFont.mFtFace->glyph->metrics, glyph_name );
-                inputFont.mGlyphs.push_back ( g );
+                glyph_name_buffer[255] = 0;
+                glyph_name = glyph_name_buffer;
             }
-        }
-    }
-    else {
-        for ( auto& inputFont : mInputFonts ) {
 
-            for ( const FT_ULong i : inputFont.mCodepointsToProcess ) {
-
-                auto ftError = FT_Load_Glyph ( inputFont.mFtFace, i, FT_LOAD_DEFAULT );
-
-                if ( ftError != FT_Err_Ok ) {
-
-                    // no glyph present for the codepoint
-                    continue;
-                }
-
-                if ( inputFont.mFaceHasGlyphNames ) {
-
-                    ftError = FT_Get_Glyph_Name( inputFont.mFtFace, i, glyph_name_buffer, 256 );
-
-                    if ( ftError != FT_Err_Ok ) {
-
-                        cerr << "FreeType error: " << ftError << "\n";
-                        return false;
-                    }
-
-                    glyph_name_buffer[255] = 0;
-                    glyph_name = glyph_name_buffer;
-                }
-
-                auto* g = new InternalGlyphForGen( mConf, mThreadDriver, i, inputFont.mFtFace->glyph->metrics, glyph_name );
-                inputFont.mGlyphs.push_back ( g );
-            }
+            auto* g = new InternalGlyphForGen( mConf, mThreadDriver, glyph_index, inputFont.mFtFace->glyph->metrics, glyph_name );
+            inputFont.mGlyphs.push_back ( g );
         }
     }
 
@@ -826,9 +812,16 @@ bool Generator::emitFileMetrics()
         osMetrics << inputFont.mFontPath;
         osMetrics << "\n";
 
-        osMetrics << "# Char Code Ranges:(low, high+1) [";
+        osMetrics << "# Code Point Ranges:(low, high+1) [";
 
-        for ( const auto& pair : inputFont.mCharCodeRanges ) {
+        for ( const auto& pair : inputFont.mCodePointRanges ) {
+            osMetrics << " (" << pair.first << "," << pair.second << ")";
+        }
+        osMetrics << "]\n";
+
+        osMetrics << "# Glyph Index Ranges:(low, high+1) [";
+
+        for ( const auto& pair : inputFont.mGlyphIndexRanges ) {
             osMetrics << " (" << pair.first << "," << pair.second << ")";
         }
         osMetrics << "]\n";

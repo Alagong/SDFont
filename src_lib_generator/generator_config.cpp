@@ -16,8 +16,6 @@ const long   GeneratorConfig::DefaultGlyphBitmapSizeForSampling = 1024 ;
 const bool   GeneratorConfig::DefaultEnableDeadReckoning    = false;
 const bool   GeneratorConfig::DefaultReverseYDirectionForGlyphs = false;
 
-
-
 const string GeneratorConfig::JSON_KEY_INPUT_FONTS                    = "input fonts";
 const string GeneratorConfig::JSON_KEY_OUTPUT                         = "output";
 const string GeneratorConfig::JSON_KEY_GLYPH_BITMAP_SIZE_FOR_SAMPLING = "glyph bitmap size for sampling";
@@ -29,7 +27,8 @@ const string GeneratorConfig::JSON_KEY_REVERSE_Y_DIRECTION_FOR_GLYPHS = "reverse
 const string GeneratorConfig::JSON_KEY_FONT_NAME                      = "font name";
 const string GeneratorConfig::JSON_KEY_FONT_PATH                      = "font path";
 const string GeneratorConfig::JSON_KEY_ENCODING                       = "encoding";
-const string GeneratorConfig::JSON_KEY_RANGES                         = "ranges";
+const string GeneratorConfig::JSON_KEY_CODE_POINT_RANGES              = "code point ranges";
+const string GeneratorConfig::JSON_KEY_GLYPH_INDEX_RANGES             = "glyph index ranges";
 
 static uint32_t hex_to_long( const string& s ) {
 
@@ -132,9 +131,14 @@ void GeneratorConfig::InputFont::processJSON( const nlohmann::json& data )
         mFontPath = data[ JSON_KEY_FONT_PATH ];
     }
 
-    if ( data.contains( JSON_KEY_RANGES ) ) {       
+    if ( data.contains( JSON_KEY_CODE_POINT_RANGES ) ) {
 
-        mCharCodeRanges = processJSON_ranges( data[ JSON_KEY_RANGES ] );
+        mCodePointRanges = processJSON_ranges( data[ JSON_KEY_CODE_POINT_RANGES ] );
+    }
+
+    if ( data.contains( JSON_KEY_GLYPH_INDEX_RANGES ) ) {
+
+        mGlyphIndexRanges = processJSON_ranges( data[ JSON_KEY_GLYPH_INDEX_RANGES ] );
     }
 }
 
@@ -208,13 +212,26 @@ void GeneratorConfig::emitVerbose() const {
         cerr << "    Font Name: [" << inputFont.mFontName << "]\n";
         cerr << "    Font Path: [" << inputFont.mFontPath << "]\n";
 
-        if ( inputFont.mCharCodeRanges.empty() ) {
+        if ( inputFont.mCodePointRanges.empty() ) {
 
-            cerr << "    No Char Code Range specified.\n";
+            cerr << "    No Code Point Range specified.\n";
         }
         else {
-            cerr << "    Char Code Ranges(low, high+1): [";
-            for ( const auto& pair : inputFont.mCharCodeRanges ) {
+            cerr << "    Code Point Ranges(low, high+1): [";
+            for ( const auto& pair : inputFont.mCodePointRanges ) {
+
+                cerr << "     (" << pair.first << "," << pair.second << ")";
+            }
+            cerr << "]\n";
+        }
+        cerr << "\n";
+        if ( inputFont.mGlyphIndexRanges.empty() ) {
+
+            cerr << "    No Glyph Index Range specified.\n";
+        }
+        else {
+            cerr << "    Glyph Index Ranges(low, high+1): [";
+            for ( const auto& pair : inputFont.mGlyphIndexRanges ) {
 
                 cerr << "     (" << pair.first << "," << pair.second << ")";
             }

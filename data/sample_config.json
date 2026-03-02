@@ -3,14 +3,14 @@
         {
             "font name" : "ariel-0x0000-0x0100",
             "font path" : "/System/Library/Fonts/Supplemental/Arial.ttf",
-            "ranges"    : [
+            "code point ranges" : [
                 "0X0000", "0X0100"
             ]
         },
         {
             "font name" : "times-new-roman-0x0000-0x0100",
             "font path" : "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
-            "ranges"    : [
+            "code point ranges" : [
                 "0X0000", "0X0100"
             ]
         }
